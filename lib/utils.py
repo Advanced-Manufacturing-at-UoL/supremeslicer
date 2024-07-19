@@ -63,7 +63,6 @@ class Utils:
     def sleep(sleep_time):
         try:
             time.sleep(float(sleep_time))
-            print(f"Slept for {sleep_time} seconds\n")
         except ValueError:
             print("Invalid sleep time.")
 
