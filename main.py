@@ -9,18 +9,10 @@
     Written by Pralish Satyal
     el19ps@leeds.ac.uk
 """
+from lib.main_engine import MainEngine
 
-# Import Relevent Libraries
-from lib.super_slicer import SuperSlicer
-from lib.utils import Utils
-
-# Main Engine
-def run():
-    config_path = 'static/config.yaml'
-    config = Utils.read_yaml(config_path)
-    slicer = SuperSlicer(config)
-    slicer.slice_gcode()
+mainClient = MainEngine()
 
 # Main Implementation
 if __name__ == "__main__":
-    run()
+    mainClient.cli()
