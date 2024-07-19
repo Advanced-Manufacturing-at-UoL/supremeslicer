@@ -1,18 +1,20 @@
 """
-    (C) 19/07/2024
-    University of Leeds, 2024 
-    School of Mechanical Engineering
+(C) 19/07/2024
+University of Leeds, 2024
+School of Mechanical Engineering
 
-    Custom Sandwiched Slicer Tool for slicing and generating toolpaths for the AMPI
-    machine with custom tools.
+Custom Sandwiched Slicer Tool for slicing and generating toolpaths for the AMPI
+machine with custom tools.
 
-    Written by Pralish Satyal
-    el19ps@leeds.ac.uk
+Written by Pralish Satyal
+el19ps@leeds.ac.uk
 """
+
 from lib.main_engine import MainEngine
 
-mainClient = MainEngine()
+def main():
+    main_client = MainEngine()
+    main_client.cli()
 
-# Main Implementation
 if __name__ == "__main__":
-    mainClient.cli()
+    main()
