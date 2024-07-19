@@ -4,7 +4,7 @@ from lib.utils import Utils
 class MainEngine:
     def __init__(self):
         self.start_time = None
-        self.config = Utils.read_yaml('static/config.yaml')
+        self.config = Utils.read_yaml('configs/config.yaml')
         self.slicer = SuperSlicer(self.config)
 
     def start(self):
@@ -20,22 +20,23 @@ class MainEngine:
 
     def _read_config(self):
         self.start()
-        Utils.print_yaml('static/config.yaml')
+        Utils.print_yaml('configs/config.yaml')
         self.stop()
 
     def cli(self):
 
-        while True:
-            print("\nWelcome to the SupremeSlicer\n")
-            print("Please ensure that you have read the README and have correctly")
-            print("added a config.yaml file under the static repository")
+        # Starting Message
+        print("\nWelcome to the SupremeSlicer\n")
+        print("Please ensure that you have read the README and have correctly")
+        print("added a config.yaml file under the configs repository")
 
+        while True:
             print("1. Read Config file")
             print("2. Slice a g-code file")
             print("3. Exit\n")
             
             try:
-                self.user_in = int(input("What would you like to do? "))
+                self.user_in = int(input("Please select an option"))
             except ValueError:
                 print("Invalid input. Please enter a number.")
                 return
