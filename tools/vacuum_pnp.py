@@ -1,3 +1,4 @@
+import os
 from lib.utils import Utils
 
 class VacuumPnP:
@@ -21,17 +22,16 @@ class VacuumPnP:
         Loads the parameters from the YAML configuration file.
         """
         try:
-            with open(self.config_file, 'r') as file:
-                config = Utils.read_yaml(self.config_file)
-                self.zHop_mm = config.get('zHop_mm', 5.0)
-                self.startX = config.get('startX', 10.0)
-                self.startY = config.get('startY', 20.0)
-                self.startZ = config.get('startZ', 30.0)
-                self.suctionState = config.get('suctionState', 1)
-                self.endX = config.get('endX', 40.0)
-                self.endY = config.get('endY', 50.0)
-                self.endZ = config.get('endZ', 60.0)
-                print("Configuration loaded successfully.")
+            config = Utils.read_yaml(self.config_file)
+            self.zHop_mm = config.get('zHop_mm', 5.0)
+            self.startX = config.get('startX', 10.0)
+            self.startY = config.get('startY', 20.0)
+            self.startZ = config.get('startZ', 30.0)
+            self.suctionState = config.get('suctionState', 1)
+            self.endX = config.get('endX', 40.0)
+            self.endY = config.get('endY', 50.0)
+            self.endZ = config.get('endZ', 60.0)
+            print("Configuration loaded successfully.")
         except FileNotFoundError:
             print(f"Error: Configuration file not found: {self.config_file}")
         except Exception as e:
@@ -68,13 +68,19 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 """
         print("G-code injection generated.")
 
-    def inject_gcode(self, layer, output_path):
+    def inject_gcode_at_height(self, target_height, output_path):
         """
-        Injects the generated G-code at the specified layer into a new file.
+        Injects the generated G-code at the specified height into a new file.
 
-        :param layer: The layer number where the G-code should be injected.
+        :param target_height: The height where the G-code should be injected.
         :param output_path: Path for the output file with injected G-code.
         """
+
+        layers = self._height_parser()
+        if not layers:
+            print("Error: No layer changes found in the G-code file.")
+            return
+
         if not self.gcode_content:
             print("Error: G-code content is empty. Please read the G-code file first.")
             return
@@ -82,18 +88,34 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         if not self.injected_gcode:
             print("Error: No G-code injection generated. Please generate G-code first.")
             return
+        
+        closest_height = min(layers.keys(), key=lambda x: abs(x - target_height))
+        injection_point = layers[closest_height]
+        print(f"Injecting at closest height: {closest_height} (Layer Change at line {injection_point})")
 
-        # Insert the generated G-code at the specified layer
-        lines = self.gcode_content.splitlines()
-        layer_index = next((i for i, line in enumerate(lines) if f";LAYER:{layer}" in line), -1)
-        if layer_index != -1:
-            lines.insert(layer_index + 1, self.injected_gcode)
-            with open(output_path, 'w') as file:
-                file.write('\n'.join(lines))
-            print(f"G-code injected at layer {layer} and written to {output_path}.")
-        else:
-            print(f"Layer {layer} not found in the G-code file.")
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
 
+        custom_gcode = self.gcode_content.splitlines()
+        lines.insert(injection_point + 1, custom_gcode)
+
+        output_file = os.path.join(output_path, "injected_" + os.path.basename(self.filename))
+        with open(output_file, 'w') as f:
+            f.writelines(lines)
+
+        print(f"G-code injected and saved to {output_file}")
+
+    def _height_parser(self):
+        layers = {}
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                if line.startswith(";LAYER_CHANGE"):
+                    next_line = lines[i + 1]
+                    if next_line.startswith(";Z:"):
+                        z_height = float(next_line.split(":")[1].strip())
+                        layers[z_height] = i
+        return layers
     def print_injected_gcode(self):
         """
         Prints the generated and injected G-code to the screen.

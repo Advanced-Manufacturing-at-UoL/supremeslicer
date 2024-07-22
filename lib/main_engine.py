@@ -1,6 +1,7 @@
 from lib.super_slicer import SuperSlicer
 from lib.utils import Utils
 from tools.vacuum_pnp import VacuumPnP
+import os
 
 class MainEngine:
     def __init__(self):
@@ -8,6 +9,7 @@ class MainEngine:
         self.config = Utils.read_yaml('configs/config.yaml')
         self.slicer = SuperSlicer(self.config)
         self.vacuum_pnp_tool = None
+        self.filename = None
 
     def start(self):
         self.start_time = Utils.start_timer()
@@ -22,10 +24,22 @@ class MainEngine:
 
     def _vacuum_tool(self):
         print("Loading VacuumPnP tool\n")
-        filename = input("Enter the path to the G-code file: ")
         config_file = 'tools/vacuum_config.yaml'
 
-        self.vacuum_pnp_tool = VacuumPnP(filename, config_file)
+        output_directory = 'output/'
+        
+        # Get list of files matching the pattern
+        gcode_files = [f for f in os.listdir(output_directory) if f.endswith('.gcode')]
+        
+        if not gcode_files:
+            print("No .gcode files found in the input directory.")
+            return
+        
+        # Assuming there's only one .gcode file or you want to process the first one found
+        self.filename = os.path.join(output_directory, gcode_files[0])
+        print(f"Found G-code file: {self.filename}")
+
+        self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
         
         print("Would you like to...")
         print("1. Generate and inject Gcode")
@@ -35,13 +49,15 @@ class MainEngine:
         if user_in == 1:
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.generate_gcode()
-            layer = int(input("Enter the layer number to inject the G-code: "))
-            output_path = input("Enter the path for the output file: ")
-            self.vacuum_pnp_tool.inject_gcode(layer, output_path)
+            height = float(input("Enter the height to inject the G-code: "))
+            output_path = 'output'
+            self.vacuum_pnp_tool.inject_gcode_at_height(height, output_path)
         elif user_in == 2:
             self.vacuum_pnp_tool.print_injected_gcode()
         else:
             print("Invalid option. Please select 1 or 2.")
+
+
 
     def _run_tools(self):
         print("Select a tool to enter:")
