@@ -10,6 +10,7 @@ class SimulationProcessor:
         self.filename = filename
         self.gcode = self.read_gcode()
         self.animating = False
+        self.current_frame = 0
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -90,6 +91,7 @@ class SimulationProcessor:
 
     def update_plot(self, num, coords, line):
         """Update the plot with each new coordinate."""
+        self.current_frame = num
         line.set_data(coords[:num, 0], coords[:num, 1])
         line.set_3d_properties(coords[:num, 2])
         return line,
@@ -104,6 +106,8 @@ class SimulationProcessor:
         """Start the animation."""
         if not self.animating:
             self.animating = True
+            self.ani.frame_seq = self.ani.new_frame_seq()  # Reset the frame sequence
+            self.ani.frame_seq = iter(range(self.current_frame, len(self.coords_np)))
             self.ani.event_source.start()
 
     def pause_animation(self, event):
@@ -117,14 +121,12 @@ class SimulationProcessor:
         current_val = self.slider.val
         new_val = min(current_val + 1, self.slider.valmax)
         self.slider.set_val(new_val)
-        self.update_plot(int(new_val), self.coords_np, self.line)
 
     def backward_frame(self, event):
         """Move one frame backward."""
         current_val = self.slider.val
         new_val = max(current_val - 1, self.slider.valmin)
         self.slider.set_val(new_val)
-        self.update_plot(int(new_val), self.coords_np, self.line)
 
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
@@ -156,6 +158,9 @@ class SimulationProcessor:
             self.fig, self.update_plot, num_frames, fargs=(self.coords_np, self.line),
             init_func=init, interval=interval, blit=False, repeat=False
         )
+        
+        # Ensure the animation doesn't start immediately
+        self.ani.event_source.stop()
 
         # Create playback controls
         ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
