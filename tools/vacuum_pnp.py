@@ -75,7 +75,6 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         :param target_height: The height where the G-code should be injected.
         :param output_path: Path for the output file with injected G-code.
         """
-
         layers = self._height_parser()
         if not layers:
             print("Error: No layer changes found in the G-code file.")
@@ -93,19 +92,31 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         injection_point = layers[closest_height]
         print(f"Injecting at closest height: {closest_height} (Layer Change at line {injection_point})")
 
+        # Read the G-code content
         with open(self.filename, 'r') as f:
             lines = f.readlines()
 
-        custom_gcode = self.gcode_content.splitlines()
-        lines.insert(injection_point + 1, custom_gcode)
+        # Convert injected G-code to list of lines
+        custom_gcode_lines = self.injected_gcode.splitlines()
 
+        # Insert the injected G-code lines at the correct position
+        lines.insert(injection_point + 1, '\n'.join(custom_gcode_lines) + '\n')
+
+        # Define the output path
         output_file = os.path.join(output_path, "injected_" + os.path.basename(self.filename))
+        
+        # Write the modified G-code to the output file
         with open(output_file, 'w') as f:
             f.writelines(lines)
 
         print(f"G-code injected and saved to {output_file}")
 
     def _height_parser(self):
+        """
+        Parses the G-code file to find layer change heights and their corresponding line indices.
+        
+        :return: Dictionary mapping heights to line indices of layer changes.
+        """
         layers = {}
         with open(self.filename, 'r') as f:
             lines = f.readlines()
@@ -113,9 +124,13 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
                 if line.startswith(";LAYER_CHANGE"):
                     next_line = lines[i + 1]
                     if next_line.startswith(";Z:"):
-                        z_height = float(next_line.split(":")[1].strip())
-                        layers[z_height] = i
+                        try:
+                            z_height = float(next_line.split(":")[1].strip())
+                            layers[z_height] = i
+                        except ValueError:
+                            continue
         return layers
+
     def print_injected_gcode(self):
         """
         Prints the generated and injected G-code to the screen.
