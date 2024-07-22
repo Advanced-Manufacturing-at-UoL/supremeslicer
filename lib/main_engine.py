@@ -3,6 +3,8 @@ from lib.utils import Utils
 from tools.vacuum_pnp import VacuumPnP
 import os
 
+
+"""Main Engine Class for running the overall program"""
 class MainEngine:
     def __init__(self):
         self.start_time = None

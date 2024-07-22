@@ -3,6 +3,7 @@ import re
 import time
 import sys
 
+"""Utils class for running utility functions"""
 class Utils:
     @staticmethod
     def read_yaml(file_path):

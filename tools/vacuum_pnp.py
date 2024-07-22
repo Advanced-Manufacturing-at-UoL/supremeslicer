@@ -1,6 +1,7 @@
 import os
 from lib.utils import Utils
 
+"""Class for handling functions for the VacuumPnP tool"""
 class VacuumPnP:
     def __init__(self, filename, config_file):
         """

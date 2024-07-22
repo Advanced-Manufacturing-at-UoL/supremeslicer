@@ -1,5 +1,6 @@
 import subprocess
 
+"""SuperSlicer Native Slicer handler class"""
 class SuperSlicer:
     def __init__(self, config):
         self.superslicer_executable = config.get('superslicer_executable')
