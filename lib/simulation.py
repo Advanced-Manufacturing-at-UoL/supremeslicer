@@ -9,6 +9,7 @@ class SimulationProcessor:
         """Initialize class"""
         self.filename = filename
         self.gcode = self.read_gcode()
+        self.animating = False
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -93,19 +94,51 @@ class SimulationProcessor:
         line.set_3d_properties(coords[:num, 2])
         return line,
 
+    def update_slider(self, val):
+        """Update the plot based on the slider value."""
+        frame = int(val)
+        self.update_plot(frame, self.coords_np, self.line)
+        self.fig.canvas.draw_idle()
+
+    def play_animation(self, event):
+        """Start the animation."""
+        if not self.animating:
+            self.animating = True
+            self.ani.event_source.start()
+
+    def pause_animation(self, event):
+        """Pause the animation."""
+        if self.animating:
+            self.animating = False
+            self.ani.event_source.stop()
+
+    def forward_frame(self, event):
+        """Move one frame forward."""
+        current_val = self.slider.val
+        new_val = min(current_val + 1, self.slider.valmax)
+        self.slider.set_val(new_val)
+        self.update_plot(int(new_val), self.coords_np, self.line)
+
+    def backward_frame(self, event):
+        """Move one frame backward."""
+        current_val = self.slider.val
+        new_val = max(current_val - 1, self.slider.valmin)
+        self.slider.set_val(new_val)
+        self.update_plot(int(new_val), self.coords_np, self.line)
+
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
         if not coordinates:
             print("No coordinates to animate.")
             return
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        coords_np = np.array([[x, y, z] for _, x, y, z in coordinates])
-        num_frames = len(coords_np)
+        self.fig = plt.figure()
+        ax = self.fig.add_subplot(111, projection='3d')
+        self.coords_np = np.array([[x, y, z] for _, x, y, z in coordinates])
+        num_frames = len(self.coords_np)
 
         # Plot only once
-        line, = ax.plot([], [], [], lw=2)
+        self.line, = ax.plot([], [], [], lw=2)
         ax.set_xlim([-200, 200])
         ax.set_ylim([-200, 200])
         ax.set_zlim([0, 200])
@@ -115,12 +148,12 @@ class SimulationProcessor:
         ax.set_title('G-code Toolpath Simulation')
 
         def init():
-            line.set_data([], [])
-            line.set_3d_properties([])
-            return line,
+            self.line.set_data([], [])
+            self.line.set_3d_properties([])
+            return self.line,
 
-        ani = animation.FuncAnimation(
-            fig, self.update_plot, num_frames, fargs=(coords_np, line),
+        self.ani = animation.FuncAnimation(
+            self.fig, self.update_plot, num_frames, fargs=(self.coords_np, self.line),
             init_func=init, interval=interval, blit=False, repeat=False
         )
 
@@ -135,31 +168,13 @@ class SimulationProcessor:
         btn_pause = Button(ax_pause, 'Pause')
         btn_forward = Button(ax_forward, 'Forward')
         btn_backward = Button(ax_backward, 'Backward')
-        slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+        self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
 
-        def play(event):
-            ani.event_source.start()
-
-        def pause(event):
-            ani.event_source.stop()
-
-        def forward(event):
-            slider.set_val(min(slider.val + 1, num_frames - 1))
-
-        def backward(event):
-            slider.set_val(max(slider.val - 1, 0))
-
-        def update_slider(val):
-            frame = int(val)
-            line.set_data(coords_np[:frame, 0], coords_np[:frame, 1])
-            line.set_3d_properties(coords_np[:frame, 2])
-            fig.canvas.draw_idle()
-
-        btn_play.on_clicked(play)
-        btn_pause.on_clicked(pause)
-        btn_forward.on_clicked(forward)
-        btn_backward.on_clicked(backward)
-        slider.on_changed(update_slider)
+        btn_play.on_clicked(self.play_animation)
+        btn_pause.on_clicked(self.pause_animation)
+        btn_forward.on_clicked(self.forward_frame)
+        btn_backward.on_clicked(self.backward_frame)
+        self.slider.on_changed(self.update_slider)
 
         plt.show()
 
