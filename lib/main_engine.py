@@ -1,6 +1,7 @@
 from lib.super_slicer import SuperSlicer
 from lib.utils import Utils
 from tools.vacuum_pnp import VacuumPnP
+from lib.simulation import SimulationProcessor
 import os
 
 
@@ -9,7 +10,7 @@ class MainEngine:
     def __init__(self):
         self.start_time = None
         self.config = Utils.read_yaml('configs/config.yaml')
-        self.slicer = SuperSlicer(self.config)
+        self.slicer = SuperSlicer(self.config)    
         self.vacuum_pnp_tool = None
         self.filename = None
 
@@ -23,6 +24,20 @@ class MainEngine:
         self.start()
         self.slicer.slice_gcode()
         self.stop()
+
+    def _output_folder(self):
+        output_directory = 'output/'
+        
+        # Get list of files matching the pattern
+        gcode_files = [f for f in os.listdir(output_directory) if f.endswith('.gcode')]
+        
+        if not gcode_files:
+            print("No .gcode files found in the input directory.")
+            return
+        
+        # Assuming there's only one .gcode file or you want to process the first one found
+        self.filename = os.path.join(output_directory, gcode_files[0])
+        print(f"Found G-code file: {self.filename}")
 
     def _vacuum_tool(self):
         print("Loading VacuumPnP tool\n")
@@ -59,8 +74,6 @@ class MainEngine:
         else:
             print("Invalid option. Please select 1 or 2.")
 
-
-
     def _run_tools(self):
         print("Select a tool to enter:")
         print("1. VacuumPnP")
@@ -73,6 +86,30 @@ class MainEngine:
             self._vacuum_tool()
         else:
             print("Tool not programmed yet. Sorry!")
+
+    def _run_simulation(self):
+        try:
+            print("1. Plot Original Toolpath")
+            print("2. Plot Vacuum Toolpath")
+            user_in = int(input("Generate original or toolspecific toolpath?"))
+            
+            self._output_folder()
+            simulation_processor = SimulationProcessor(self.filename)
+            
+            if user_in == 1:
+                simulation_processor.plot_original_toolpath()
+                print("Completed toolpath")
+            elif user_in == 2:
+                simulation_processor.plot_vacuum_toolpath()
+                print("Completed toolpath")
+        except ValueError as ve:
+            print(f"Value error: {ve}")
+        except FileNotFoundError as fnfe:
+            print(f"File not found error: {fnfe}")
+        except IOError as ioe:
+            print(f"IO error: {ioe}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
 
     def _read_config(self):
         Utils.sleep(1)
@@ -92,7 +129,8 @@ class MainEngine:
             print("1. Read Config file")
             print("2. Slice a g-code file")
             print("3. Access tools")
-            print("4. Exit\n")
+            print("4. Create Simulation")
+            print("5. Exit\n")
             
             try:
                 user_in = int(input("Please select an option\n"))
@@ -107,8 +145,11 @@ class MainEngine:
             elif user_in == 3:
                 self._run_tools()
             elif user_in == 4:
+                self._run_simulation()
+            elif user_in == 5:
                 print("Exiting SupremeSlicer\n")
                 Utils.sleep(2)
                 Utils.exit_on('Thank you\n')
             else:
                 print("Invalid option chosen!")
+
