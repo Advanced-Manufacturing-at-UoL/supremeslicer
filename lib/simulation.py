@@ -89,22 +89,21 @@ class SimulationProcessor:
 
         return interpolated_coords
 
-    def update_plot(self, num, coords, line, vacuum_indices):
+    def update_plot(self, num, coords, line):
         """Update the plot with each new coordinate."""
         self.current_frame = num
         line.set_data(coords[:num, 0], coords[:num, 1])
         line.set_3d_properties(coords[:num, 2])
 
-        # Debug output
-        print(f"Current frame number: {num}")
-        print(f"Vacuum indices: {vacuum_indices}")
-
-        # Change color if within vacuum G-code
-        if num in vacuum_indices:
-            print(f"Just found the vacuum code, setting color to red in position {num} out of {vacuum_indices}")
-            line.set_color('r')
+        # Change color if within vacuum G-code range
+        if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+            if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
+                print(f"Just found the vacuum code, setting color to red in position {num}")
+                line.set_color('r')
+            else:
+                print(f"Position {num} is not a vacuum code")
+                line.set_color('b')
         else:
-            print(f"Position {num} out of {vacuum_indices}")
             line.set_color('b')
 
         return line,
@@ -113,7 +112,7 @@ class SimulationProcessor:
         """Update the plot based on the slider value."""
         frame = int(val)
         self.current_frame = frame
-        self.update_plot(frame, self.coords_np, self.line, self.vacuum_indices)
+        self.update_plot(frame, self.coords_np, self.line)
         self.fig.canvas.draw_idle()
 
     def play_animation(self, event):
@@ -125,7 +124,7 @@ class SimulationProcessor:
                 self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
                 self.fig, self.update_plot, frames=range(self.current_frame, len(self.coords_np)),
-                fargs=(self.coords_np, self.line, self.vacuum_indices), interval=self.interval, blit=False, repeat=False
+                fargs=(self.coords_np, self.line), interval=self.interval, blit=False, repeat=False
             )
             self.fig.canvas.draw_idle()
         else:
@@ -143,7 +142,7 @@ class SimulationProcessor:
         new_val = min(current_val + 1, self.slider.valmax)
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
-        self.update_plot(self.current_frame, self.coords_np, self.line, self.vacuum_indices)
+        self.update_plot(self.current_frame, self.coords_np, self.line)
         self.fig.canvas.draw_idle()
 
     def backward_frame(self, event):
@@ -152,7 +151,7 @@ class SimulationProcessor:
         new_val = max(current_val - 1, self.slider.valmin)
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
-        self.update_plot(self.current_frame, self.coords_np, self.line, self.vacuum_indices)
+        self.update_plot(self.current_frame, self.coords_np, self.line)
         self.fig.canvas.draw_idle()
 
     def plot_toolpath_animation(self, coordinates, interval):
@@ -164,13 +163,26 @@ class SimulationProcessor:
         # Find vacuum G-code
         vacuum_gcode = self.find_vacuum_gcode()
         vacuum_coords = self.parse_gcode(vacuum_gcode) if vacuum_gcode else []
-        
-        # Create a mapping from coordinates to indices
-        coord_map = {tuple(coord): idx for idx, coord in enumerate(coordinates)}
-        vacuum_indices = [coord_map.get(tuple(coord), -1) for coord in vacuum_coords if tuple(coord) in coord_map]
 
-        print(f"Vacuum indices: {vacuum_indices}")
-        self.vacuum_indices = vacuum_indices
+        # Create a mapping from coordinates to indices
+        coord_map = {tuple(np.round(coord[1:], decimals=4)): idx for idx, coord in enumerate(coordinates)}
+
+        # Initialize vacuum injection start and end frames
+        self.vacuum_start_frame = None
+        self.vacuum_end_frame = None
+
+        # Find the frame numbers for vacuum injection start and end
+        if vacuum_coords:
+            first_vacuum_coord = tuple(np.round(vacuum_coords[0][1:], decimals=4))
+            last_vacuum_coord = tuple(np.round(vacuum_coords[-1][1:], decimals=4))
+
+            if first_vacuum_coord in coord_map:
+                self.vacuum_start_frame = coord_map[first_vacuum_coord]
+            if last_vacuum_coord in coord_map:
+                self.vacuum_end_frame = coord_map[last_vacuum_coord]
+
+        print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
+        print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
 
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
