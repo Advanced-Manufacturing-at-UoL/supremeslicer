@@ -104,7 +104,7 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         lines.insert(injection_point + 1, '\n'.join(custom_gcode_lines) + '\n')
 
         # Define the output path
-        output_file = os.path.join(output_path, "injected_" + os.path.basename(self.filename))
+        output_file = os.path.join(output_path, os.path.basename(self.filename))
         
         # Write the modified G-code to the output file
         with open(output_file, 'w') as f:
