@@ -99,20 +99,24 @@ class SimulationProcessor:
     def update_slider(self, val):
         """Update the plot based on the slider value."""
         frame = int(val)
+        self.current_frame = frame
         self.update_plot(frame, self.coords_np, self.line)
         self.fig.canvas.draw_idle()
 
     def play_animation(self, event):
-        """Start the animation."""
+        """Start the animation from the current slider value."""
         if not self.animating:
             self.animating = True
-            if not hasattr(self, 'ani'):
-                self.ani = animation.FuncAnimation(
-                    self.fig, self.update_plot, len(self.coords_np),
-                    fargs=(self.coords_np, self.line), interval=self.interval, blit=False, repeat=False
-                )
-            else:
-                self.ani.event_source.start()
+            self.current_frame = int(self.slider.val)
+            if hasattr(self, 'ani'):
+                self.ani.event_source.stop()
+            self.ani = animation.FuncAnimation(
+                self.fig, self.update_plot, frames=range(self.current_frame, len(self.coords_np)),
+                fargs=(self.coords_np, self.line), interval=self.interval, blit=False, repeat=False
+            )
+            self.fig.canvas.draw_idle()
+        else:
+            self.ani.event_source.start()
 
     def pause_animation(self, event):
         """Pause the animation."""
