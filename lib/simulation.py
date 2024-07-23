@@ -6,7 +6,7 @@ from matplotlib.widgets import Button, Slider
 
 class SimulationProcessor:
     def __init__(self, filename):
-        """Initialise class"""
+        """Initialize class"""
         self.filename = filename
         self.gcode = self.read_gcode()
         self.animating = False
@@ -39,7 +39,7 @@ class SimulationProcessor:
         """Parse G-code and return a list of (command, x, y, z) coordinates."""
         coordinates = []
         x, y, z = 0.0, 0.0, 0.0
-        
+
         for line in gcode:
             line = line.strip()
             if not line or line.startswith(';'):
@@ -65,28 +65,28 @@ class SimulationProcessor:
                         z = float(part[1:])
                     except ValueError:
                         z = 0.0
-            
+
             if command is not None:
                 coordinates.append((command, x, y, z))
-        
+
         interpolated_coords = []
         for i in range(len(coordinates) - 1):
             cmd1, x1, y1, z1 = coordinates[i]
             cmd2, x2, y2, z2 = coordinates[i + 1]
-            
+
             if cmd1.startswith('G0') and cmd2.startswith('G1'):
                 num_steps = 10  # Adjust number of interpolation steps
                 xs = np.linspace(x1, x2, num_steps)
                 ys = np.linspace(y1, y2, num_steps)
                 zs = np.linspace(z1, z2, num_steps)
-                
+
                 interpolated_coords.extend(('G1', xs[j], ys[j], zs[j]) for j in range(num_steps))
             else:
                 interpolated_coords.append((cmd1, x1, y1, z1))
-        
+
         if coordinates:
             interpolated_coords.append(coordinates[-1])
-        
+
         return interpolated_coords
 
     def update_plot(self, num, coords, line, vacuum_indices):
@@ -95,12 +95,16 @@ class SimulationProcessor:
         line.set_data(coords[:num, 0], coords[:num, 1])
         line.set_3d_properties(coords[:num, 2])
 
+        # Debug output
+        print(f"Current frame number: {num}")
+        print(f"Vacuum indices: {vacuum_indices}")
+
         # Change color if within vacuum G-code
         if num in vacuum_indices:
-            print(f"Just found the vacuum code, setting colour to red in position {num} out of {(vacuum_indices)}")
+            print(f"Just found the vacuum code, setting color to red in position {num} out of {vacuum_indices}")
             line.set_color('r')
         else:
-            print(f"Position {num} out of {(vacuum_indices)}")
+            print(f"Position {num} out of {vacuum_indices}")
             line.set_color('b')
 
         return line,
@@ -157,11 +161,15 @@ class SimulationProcessor:
             print("No coordinates to animate.")
             return
 
-        # Find vacuum G-code indices
+        # Find vacuum G-code
         vacuum_gcode = self.find_vacuum_gcode()
         vacuum_coords = self.parse_gcode(vacuum_gcode) if vacuum_gcode else []
-        vacuum_indices = [i for i, coord in enumerate(coordinates) if coord in vacuum_coords]
-        print("")
+        
+        # Create a mapping from coordinates to indices
+        coord_map = {tuple(coord): idx for idx, coord in enumerate(coordinates)}
+        vacuum_indices = [coord_map.get(tuple(coord), -1) for coord in vacuum_coords if tuple(coord) in coord_map]
+
+        print(f"Vacuum indices: {vacuum_indices}")
         self.vacuum_indices = vacuum_indices
 
         self.fig = plt.figure()
