@@ -11,6 +11,8 @@ class SimulationProcessor:
         self.gcode = self.read_gcode()
         self.animating = False
         self.current_frame = 0
+        self.vacuum_start_frame = None
+        self.vacuum_end_frame = None
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -25,7 +27,7 @@ class SimulationProcessor:
         specific_gcode = []
         block_found = False
 
-        for l_no, line in enumerate(self.gcode):
+        for line in self.gcode:
             if start_comment in line:
                 block_found = True
             if block_found:
@@ -80,7 +82,8 @@ class SimulationProcessor:
                 ys = np.linspace(y1, y2, num_steps)
                 zs = np.linspace(z1, z2, num_steps)
 
-                interpolated_coords.extend(('G1', xs[j], ys[j], zs[j]) for j in range(num_steps))
+                for j in range(num_steps):
+                    interpolated_coords.append(('G1', xs[j], ys[j], zs[j]))
             else:
                 interpolated_coords.append((cmd1, x1, y1, z1))
 
@@ -89,34 +92,46 @@ class SimulationProcessor:
 
         return interpolated_coords
 
-    def update_plot(self, num, coords, line):
+    def update_plot(self, num):
         """Update the plot with each new coordinate."""
         self.current_frame = num
-        line.set_data(coords[:num, 0], coords[:num, 1])
-        line.set_3d_properties(coords[:num, 2])
+        self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
+        self.line.set_3d_properties(self.coords_np[:num, 2])
 
-        # Change color if within vacuum G-code range
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
-                print(f"Just found the vacuum code, setting color to red in position {num}")
-                line.set_color('r')
+                self.line.set_color('r')
             else:
-                print(f"Position {num} is not a vacuum code")
-                line.set_color('b')
+                self.line.set_color('b')
         else:
-            line.set_color('b')
+            self.line.set_color('b')
 
-        return line,
+        # Plot vacuum coordinates separately
+        if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+            mask = (self.coords_np[:, 0] >= self.coords_np[self.vacuum_start_frame, 0]) & \
+                   (self.coords_np[:, 0] <= self.coords_np[self.vacuum_end_frame, 0]) & \
+                   (self.coords_np[:, 1] >= self.coords_np[self.vacuum_start_frame, 1]) & \
+                   (self.coords_np[:, 1] <= self.coords_np[self.vacuum_end_frame, 1]) & \
+                   (self.coords_np[:, 2] >= self.coords_np[self.vacuum_start_frame, 2]) & \
+                   (self.coords_np[:, 2] <= self.coords_np[self.vacuum_end_frame, 2])
+            vacuum_coords = self.coords_np[mask]
+            self.vacuum_line.set_data(vacuum_coords[:, 0], vacuum_coords[:, 1])
+            self.vacuum_line.set_3d_properties(vacuum_coords[:, 2])
+        else:
+            self.vacuum_line.set_data([], [])
+            self.vacuum_line.set_3d_properties([])
+
+        return self.line, self.vacuum_line
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
         frame = int(val)
         self.current_frame = frame
-        self.update_plot(frame, self.coords_np, self.line)
+        self.update_plot(frame)
         self.fig.canvas.draw_idle()
 
     def play_animation(self, event):
-        """Start the animation from the current slider value."""
+        """Start or resume the animation from the current slider value."""
         if not self.animating:
             self.animating = True
             self.current_frame = int(self.slider.val)
@@ -124,7 +139,7 @@ class SimulationProcessor:
                 self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
                 self.fig, self.update_plot, frames=range(self.current_frame, len(self.coords_np)),
-                fargs=(self.coords_np, self.line), interval=self.interval, blit=False, repeat=False
+                interval=self.interval, blit=False, repeat=False
             )
             self.fig.canvas.draw_idle()
         else:
@@ -142,7 +157,7 @@ class SimulationProcessor:
         new_val = min(current_val + 1, self.slider.valmax)
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
-        self.update_plot(self.current_frame, self.coords_np, self.line)
+        self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
     def backward_frame(self, event):
@@ -151,7 +166,7 @@ class SimulationProcessor:
         new_val = max(current_val - 1, self.slider.valmin)
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
-        self.update_plot(self.current_frame, self.coords_np, self.line)
+        self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
     def plot_toolpath_animation(self, coordinates, interval):
@@ -191,7 +206,8 @@ class SimulationProcessor:
         self.interval = interval
 
         # Plot only once
-        self.line, = ax.plot([], [], [], lw=2)
+        self.line, = ax.plot([], [], [], lw=2, color='b')  # Default color
+        self.vacuum_line, = ax.plot([], [], [], lw=2, color='r')  # Vacuum color
         ax.set_xlim([-200, 200])
         ax.set_ylim([-200, 200])
         ax.set_zlim([0, 200])
@@ -203,7 +219,9 @@ class SimulationProcessor:
         def init():
             self.line.set_data([], [])
             self.line.set_3d_properties([])
-            return self.line,
+            self.vacuum_line.set_data([], [])
+            self.vacuum_line.set_3d_properties([])
+            return self.line, self.vacuum_line
 
         # Initialize the plot without starting the animation
         init()
