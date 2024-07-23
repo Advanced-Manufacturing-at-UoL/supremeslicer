@@ -6,7 +6,7 @@ from matplotlib.widgets import Button, Slider
 
 class SimulationProcessor:
     def __init__(self, filename):
-        """Initialize class"""
+        """Initialise class"""
         self.filename = filename
         self.gcode = self.read_gcode()
         self.animating = False
@@ -129,12 +129,18 @@ class SimulationProcessor:
         current_val = self.slider.val
         new_val = min(current_val + 1, self.slider.valmax)
         self.slider.set_val(new_val)
+        self.current_frame = int(new_val)
+        self.update_plot(self.current_frame, self.coords_np, self.line)
+        self.fig.canvas.draw_idle()
 
     def backward_frame(self, event):
         """Move one frame backward."""
         current_val = self.slider.val
         new_val = max(current_val - 1, self.slider.valmin)
         self.slider.set_val(new_val)
+        self.current_frame = int(new_val)
+        self.update_plot(self.current_frame, self.coords_np, self.line)
+        self.fig.canvas.draw_idle()
 
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
