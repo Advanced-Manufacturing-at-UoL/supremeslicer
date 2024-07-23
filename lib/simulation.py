@@ -89,10 +89,6 @@ class SimulationProcessor:
         
         return interpolated_coords
 
-    def are_coords_equal(self, c1, c2, tolerance=1e-5):
-        """Check if two coordinates are equal within a tolerance."""
-        return all(abs(a - b) < tolerance for a, b in zip(c1, c2))
-
     def update_plot(self, num, coords, line, vacuum_indices):
         """Update the plot with each new coordinate."""
         self.current_frame = num
@@ -100,11 +96,11 @@ class SimulationProcessor:
         line.set_3d_properties(coords[:num, 2])
 
         # Change color if within vacuum G-code
-        if any(self.are_coords_equal(coords[num], self.coords_np[v_index]) for v_index in vacuum_indices):
-            print(f"Just found the vacuum code, setting colour to red in position {num} out of {vacuum_indices}")
+        if num in vacuum_indices:
+            print(f"Just found the vacuum code, setting colour to red in position {num} out of {(vacuum_indices)}")
             line.set_color('r')
         else:
-            print(f"Position {num} out of {vacuum_indices}")
+            print(f"Position {num} out of {(vacuum_indices)}")
             line.set_color('b')
 
         return line,
@@ -164,12 +160,8 @@ class SimulationProcessor:
         # Find vacuum G-code indices
         vacuum_gcode = self.find_vacuum_gcode()
         vacuum_coords = self.parse_gcode(vacuum_gcode) if vacuum_gcode else []
-        vacuum_indices = [i for i, coord in enumerate(coordinates) 
-                          if any(self.are_coords_equal(coord, v_coord) for v_coord in vacuum_coords)]
-        
-        print(f"Vacuum coordinates: {vacuum_coords}")
-        print(f"Vacuum indices: {vacuum_indices}")
-
+        vacuum_indices = [i for i, coord in enumerate(coordinates) if coord in vacuum_coords]
+        print("")
         self.vacuum_indices = vacuum_indices
 
         self.fig = plt.figure()
