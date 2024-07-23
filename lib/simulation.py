@@ -106,9 +106,13 @@ class SimulationProcessor:
         """Start the animation."""
         if not self.animating:
             self.animating = True
-            self.ani.frame_seq = self.ani.new_frame_seq()  # Reset the frame sequence
-            self.ani.frame_seq = iter(range(self.current_frame, len(self.coords_np)))
-            self.ani.event_source.start()
+            if not hasattr(self, 'ani'):
+                self.ani = animation.FuncAnimation(
+                    self.fig, self.update_plot, len(self.coords_np),
+                    fargs=(self.coords_np, self.line), interval=self.interval, blit=False, repeat=False
+                )
+            else:
+                self.ani.event_source.start()
 
     def pause_animation(self, event):
         """Pause the animation."""
@@ -138,6 +142,7 @@ class SimulationProcessor:
         ax = self.fig.add_subplot(111, projection='3d')
         self.coords_np = np.array([[x, y, z] for _, x, y, z in coordinates])
         num_frames = len(self.coords_np)
+        self.interval = interval
 
         # Plot only once
         self.line, = ax.plot([], [], [], lw=2)
@@ -154,13 +159,8 @@ class SimulationProcessor:
             self.line.set_3d_properties([])
             return self.line,
 
-        self.ani = animation.FuncAnimation(
-            self.fig, self.update_plot, num_frames, fargs=(self.coords_np, self.line),
-            init_func=init, interval=interval, blit=False, repeat=False
-        )
-        
-        # Ensure the animation doesn't start immediately
-        self.ani.event_source.stop()
+        # Initialize the plot without starting the animation
+        init()
 
         # Create playback controls
         ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
