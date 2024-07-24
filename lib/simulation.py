@@ -184,17 +184,21 @@ class SimulationProcessor:
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
         print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
-        start_line_guess = get_line_from_file(self.filename, 2135+3)
-        end_line_guess = get_line_from_file(self.filename, 2135+3+8)
+        start_line_guess = get_line_from_file(self.filename, 2135+3) # 2138 is equal to 1816 in terms of frames. 
+        end_line_guess = get_line_from_file(self.filename, 2135+11) # 2146 is equal to 1822
         # Find index of line 2135 +3
         start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+3)
         print(f"Start Index of line 2135 + 3 in original line numbers: {start_index_in_original}")
         
-        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+3+8)
-        print(f"Start Index of line 2135 + 3 in original line numbers: {end_index_in_original}")
-        print(f"Is this your line? {start_line_guess}")
-        print(f"Is this your other line {end_line_guess}")
+        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+9)
+        print(f"End Index of line 2135 + 3 + 8 in original line numbers: {end_index_in_original}")
+        print(f"Is this your start line? {start_line_guess}")
+        print(f"Is this your end line {end_line_guess}")
         print(vacuum_coords)
+
+        # Now, if we know the correct index we need to be able to change the colour for the coordinates within those positions 
+        # between start and end comment
+        # This is regarding plotting the graph with vacuum gcode in red color.
 
         # Initialize vacuum injection start and end frames
         self.vacuum_start_frame = None
