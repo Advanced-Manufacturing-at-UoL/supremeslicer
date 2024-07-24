@@ -97,7 +97,6 @@ class SimulationProcessor:
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
         self.current_frame = num
-        print(f"Updated plot and am on frame: {self.current_frame}")
         self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
         self.line.set_3d_properties(self.coords_np[:num, 2])
 
@@ -116,7 +115,6 @@ class SimulationProcessor:
         """Update the plot based on the slider value."""
         frame = int(val)
         self.current_frame = frame
-        print(f"Updated slider and am on frame: {self.current_frame}")
         self.update_plot(frame)
         self.fig.canvas.draw_idle()
 
@@ -161,22 +159,22 @@ class SimulationProcessor:
         self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
+
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
         if not coordinates:
             print("No coordinates to animate.")
             return
 
+        # Filtered G-code lines and create mapping
+        filtered_lines = [line.strip() for line in self.gcode if line.strip() and not line.strip().startswith(';')]
+        line_number_to_index = self.create_line_number_mapping(filtered_lines)
+
         # Find vacuum G-code lines
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         print(f"Vacuum G-code lines: {vacuum_start_line}, {vacuum_end_line}")
 
         vacuum_coords = []
-        vacuum_coords = self.get_vacuum_coordinates()
-
-        print(f"Vacuum coords are {vacuum_coords}\n")
-
-        # If we have the injection lines, get the coordinates
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             vacuum_coords = self.parse_gcode(vacuum_gcode)
@@ -184,7 +182,8 @@ class SimulationProcessor:
         print(f"Parsed vacuum coordinates: {vacuum_coords}")
 
         # Extract the original line numbers from the parsed coordinates
-        original_line_numbers = [coord[4] for coord in coordinates]
+        original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
+        print(f"The original line numbers from the parsed coordinates are {original_line_numbers}\n")
 
         # Initialize vacuum injection start and end frames
         self.vacuum_start_frame = None
@@ -193,8 +192,8 @@ class SimulationProcessor:
         # Find the frame numbers for vacuum injection start and end
         if vacuum_coords:
             for vac_coord in vacuum_coords:
-                if vac_coord[4] in original_line_numbers:
-                    frame_index = original_line_numbers.index(vac_coord[4])
+                if vac_coord[4] in line_number_to_index:
+                    frame_index = line_number_to_index[vac_coord[4]]
                     if self.vacuum_start_frame is None:
                         self.vacuum_start_frame = frame_index
                     self.vacuum_end_frame = frame_index
@@ -210,7 +209,6 @@ class SimulationProcessor:
 
         # Plot only once
         self.line, = ax.plot([], [], [], lw=2, color='b')  # Default color
-        self.vacuum_line, = ax.plot([], [], [], lw=2, color='r')  # Vacuum color
         ax.set_xlim([-200, 200])
         ax.set_ylim([-200, 200])
         ax.set_zlim([0, 200])
@@ -222,9 +220,7 @@ class SimulationProcessor:
         def init():
             self.line.set_data([], [])
             self.line.set_3d_properties([])
-            self.vacuum_line.set_data([], [])
-            self.vacuum_line.set_3d_properties([])
-            return self.line, self.vacuum_line
+            return self.line,
 
         # Initialize the plot without starting the animation
         init()
@@ -265,8 +261,24 @@ class SimulationProcessor:
         else:
             print("No vacuum injection G-code found.")
 
+    def create_line_number_mapping(self, filtered_lines):
+        """Create a mapping of original line numbers to their indices in the filtered list."""
+        line_number_to_index = {}
+        current_line_number = 0
+
+        for line in filtered_lines:
+            if line.strip() and not line.strip().startswith(';'):
+                current_line_number += 1
+                line_number_to_index[current_line_number] = len(line_number_to_index)
+        
+        return line_number_to_index
+
     def get_vacuum_coordinates(self):
         """Find and print the coordinates corresponding to the vacuum PnP toolpath."""
+        # Filtered G-code lines and create mapping
+        filtered_lines = [line.strip() for line in self.gcode if line.strip() and not line.strip().startswith(';')]
+        line_number_to_index = self.create_line_number_mapping(filtered_lines)
+
         # Find the vacuum G-code lines
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         if vacuum_start_line is None or vacuum_end_line is None:
@@ -294,3 +306,4 @@ class SimulationProcessor:
             print(f"X: {frame[0]}, Y: {frame[1]}, Z: {frame[2]}")
 
         return vacuum_coords_frames
+
