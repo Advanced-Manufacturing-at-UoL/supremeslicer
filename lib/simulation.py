@@ -179,11 +179,19 @@ class SimulationProcessor:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             vacuum_coords = self.parse_gcode(vacuum_gcode)
 
-        print(f"Parsed vacuum coordinates: {vacuum_coords}")
+        print(f"Parsed vacuum coordinates: {(vacuum_coords)}")
 
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
-        print(f"The original line numbers from the parsed coordinates are {original_line_numbers}\n")
+        print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
+        line_guess = get_line_from_file(self.filename, 2135+3)
+        
+        # Find index of line 2135 +3
+        index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+3)
+        print(f"Index of line 2135 + 3 in original line numbers: {index_in_original}")
+        
+        print(f"Is this your line? {line_guess}")
+        print(vacuum_coords)
 
         # Initialize vacuum injection start and end frames
         self.vacuum_start_frame = None
@@ -307,3 +315,27 @@ class SimulationProcessor:
 
         return vacuum_coords_frames
 
+    def find_index_in_original_line_numbers(self, original_line_numbers, target_line_number):
+        """Find the index of the target line number in the list of original line numbers."""
+        try:
+            return original_line_numbers.index(target_line_number)
+        except ValueError:
+            print(f"Line number {target_line_number} not found in the original line numbers.")
+            return None
+
+
+def get_line_from_file(filename, line_number):
+    try:
+        with open(filename, 'r') as file:
+            for current_line_number, line in enumerate(file, start=1):
+                if current_line_number == line_number:
+                    return line.strip()
+            # If line_number is not found
+            print(f"Line {line_number} not found in the file.")
+            return None
+    except FileNotFoundError:
+        print(f"Error: File {filename} not found.")
+        return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
