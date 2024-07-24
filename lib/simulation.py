@@ -184,13 +184,16 @@ class SimulationProcessor:
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
         print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
-        line_guess = get_line_from_file(self.filename, 2135+3)
-        
+        start_line_guess = get_line_from_file(self.filename, 2135+3)
+        end_line_guess = get_line_from_file(self.filename, 2135+3+8)
         # Find index of line 2135 +3
-        index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+3)
-        print(f"Index of line 2135 + 3 in original line numbers: {index_in_original}")
+        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+3)
+        print(f"Start Index of line 2135 + 3 in original line numbers: {start_index_in_original}")
         
-        print(f"Is this your line? {line_guess}")
+        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+3+8)
+        print(f"Start Index of line 2135 + 3 in original line numbers: {end_index_in_original}")
+        print(f"Is this your line? {start_line_guess}")
+        print(f"Is this your other line {end_line_guess}")
         print(vacuum_coords)
 
         # Initialize vacuum injection start and end frames
