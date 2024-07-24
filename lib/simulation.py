@@ -19,30 +19,32 @@ class SimulationProcessor:
         with open(self.filename, 'r') as f:
             return f.readlines()
 
-    def find_vacuum_gcode(self):
-        """Extract vacuum injection G-code from the file."""
+    def find_vacuum_gcode_lines(self):
+        """Find the start and end lines of the vacuum G-code in terms of relevant G-code commands."""
         start_comment = "; VacuumPnP TOOL G CODE INJECTION START"
         end_comment = "; VacuumPnP TOOL G CODE INJECTION END"
 
-        specific_gcode = []
-        block_found = False
+        start_line = None
+        end_line = None
 
-        for line in self.gcode:
+        command_lines = [i for i, line in enumerate(self.gcode) if line.strip() and not line.strip().startswith(';')]
+
+        for i in command_lines:
+            line = self.gcode[i]
             if start_comment in line:
-                block_found = True
-            if block_found:
-                specific_gcode.append(line)
-                if end_comment in line:
-                    break
-
-        return specific_gcode if block_found else None
+                start_line = i
+            if end_comment in line:
+                end_line = i
+                break
+            
+        return start_line, end_line
 
     def parse_gcode(self, gcode):
-        """Parse G-code and return a list of (command, x, y, z) coordinates."""
+        """Parse G-code and return a list of (command, x, y, z) coordinates with their original line numbers."""
         coordinates = []
         x, y, z = 0.0, 0.0, 0.0
 
-        for line in gcode:
+        for line_number, line in enumerate(gcode):
             line = line.strip()
             if not line or line.startswith(';'):
                 continue
@@ -69,12 +71,12 @@ class SimulationProcessor:
                         z = 0.0
 
             if command is not None:
-                coordinates.append((command, x, y, z))
+                coordinates.append((command, x, y, z, line_number))
 
         interpolated_coords = []
         for i in range(len(coordinates) - 1):
-            cmd1, x1, y1, z1 = coordinates[i]
-            cmd2, x2, y2, z2 = coordinates[i + 1]
+            cmd1, x1, y1, z1, ln1 = coordinates[i]
+            cmd2, x2, y2, z2, ln2 = coordinates[i + 1]
 
             if cmd1.startswith('G0') and cmd2.startswith('G1'):
                 num_steps = 10  # Adjust number of interpolation steps
@@ -83,14 +85,15 @@ class SimulationProcessor:
                 zs = np.linspace(z1, z2, num_steps)
 
                 for j in range(num_steps):
-                    interpolated_coords.append(('G1', xs[j], ys[j], zs[j]))
+                    interpolated_coords.append(('G1', xs[j], ys[j], zs[j], ln1))
             else:
-                interpolated_coords.append((cmd1, x1, y1, z1))
+                interpolated_coords.append((cmd1, x1, y1, z1, ln1))
 
         if coordinates:
             interpolated_coords.append(coordinates[-1])
 
         return interpolated_coords
+
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
@@ -98,6 +101,7 @@ class SimulationProcessor:
         self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
         self.line.set_3d_properties(self.coords_np[:num, 2])
 
+        # Highlight vacuum tool usage coordinates
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
                 self.line.set_color('r')
@@ -106,22 +110,7 @@ class SimulationProcessor:
         else:
             self.line.set_color('b')
 
-        # Plot vacuum coordinates separately
-        if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            mask = (self.coords_np[:, 0] >= self.coords_np[self.vacuum_start_frame, 0]) & \
-                   (self.coords_np[:, 0] <= self.coords_np[self.vacuum_end_frame, 0]) & \
-                   (self.coords_np[:, 1] >= self.coords_np[self.vacuum_start_frame, 1]) & \
-                   (self.coords_np[:, 1] <= self.coords_np[self.vacuum_end_frame, 1]) & \
-                   (self.coords_np[:, 2] >= self.coords_np[self.vacuum_start_frame, 2]) & \
-                   (self.coords_np[:, 2] <= self.coords_np[self.vacuum_end_frame, 2])
-            vacuum_coords = self.coords_np[mask]
-            self.vacuum_line.set_data(vacuum_coords[:, 0], vacuum_coords[:, 1])
-            self.vacuum_line.set_3d_properties(vacuum_coords[:, 2])
-        else:
-            self.vacuum_line.set_data([], [])
-            self.vacuum_line.set_3d_properties([])
-
-        return self.line, self.vacuum_line
+        return self.line,
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -175,12 +164,16 @@ class SimulationProcessor:
             print("No coordinates to animate.")
             return
 
-        # Find vacuum G-code
-        vacuum_gcode = self.find_vacuum_gcode()
-        vacuum_coords = self.parse_gcode(vacuum_gcode) if vacuum_gcode else []
+        # Find vacuum G-code lines
+        vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+        vacuum_coords = []
 
-        # Create a mapping from coordinates to indices
-        coord_map = {tuple(np.round(coord[1:], decimals=4)): idx for idx, coord in enumerate(coordinates)}
+        if vacuum_start_line is not None and vacuum_end_line is not None:
+            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+            vacuum_coords = self.parse_gcode(vacuum_gcode)
+
+        # Extract the original line numbers from the parsed coordinates
+        original_line_numbers = [coord[4] for coord in coordinates]
 
         # Initialize vacuum injection start and end frames
         self.vacuum_start_frame = None
@@ -188,20 +181,20 @@ class SimulationProcessor:
 
         # Find the frame numbers for vacuum injection start and end
         if vacuum_coords:
-            first_vacuum_coord = tuple(np.round(vacuum_coords[0][1:], decimals=4))
-            last_vacuum_coord = tuple(np.round(vacuum_coords[-1][1:], decimals=4))
+            first_vacuum_line_number = vacuum_coords[0][4]
+            last_vacuum_line_number = vacuum_coords[-1][4]
 
-            if first_vacuum_coord in coord_map:
-                self.vacuum_start_frame = coord_map[first_vacuum_coord]
-            if last_vacuum_coord in coord_map:
-                self.vacuum_end_frame = coord_map[last_vacuum_coord]
+            if first_vacuum_line_number in original_line_numbers:
+                self.vacuum_start_frame = original_line_numbers.index(first_vacuum_line_number)
+            if last_vacuum_line_number in original_line_numbers:
+                self.vacuum_end_frame = original_line_numbers.index(last_vacuum_line_number)
 
         print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
         print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
 
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
-        self.coords_np = np.array([[x, y, z] for _, x, y, z in coordinates])
+        self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
         num_frames = len(self.coords_np)
         self.interval = interval
 
@@ -247,6 +240,7 @@ class SimulationProcessor:
 
         plt.show()
 
+
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
         coordinates = self.parse_gcode(self.gcode)
@@ -254,8 +248,9 @@ class SimulationProcessor:
 
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
-        vacuum_gcode = self.find_vacuum_gcode()
-        if vacuum_gcode:
+        vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+        if vacuum_start_line is not None and vacuum_end_line is not None:
+            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             coordinates = self.parse_gcode(vacuum_gcode)
             self.plot_toolpath_animation(coordinates, interval=50)
         else:
