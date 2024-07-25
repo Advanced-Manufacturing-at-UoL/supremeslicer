@@ -97,20 +97,23 @@ class SimulationProcessor:
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
         self.current_frame = num
+        # Update the blue line data
         self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
         self.line.set_3d_properties(self.coords_np[:num, 2])
+        self.line.set_color('b')
 
-        # Highlight vacuum tool usage coordinates
-        # Update vacuum toolpath plotting
+        # Check if within the vacuum range
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             vacuum_range = (self.vacuum_start_frame, self.vacuum_end_frame)
             if vacuum_range[0] <= num <= vacuum_range[1]:
-                # Update vacuum line data within the range
+                # Ensure the vacuum line is plotted for the current frame
                 self.vacuum_line.set_data(self.vacuum_coords_np[:num, 0], self.vacuum_coords_np[:num, 1])
                 self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:num, 2])
             else:
-                self.vacuum_line.set_data([], [])
-                self.vacuum_line.set_3d_properties([])
+                # Ensure the vacuum line is plotted up to the end frame
+                if self.vacuum_start_frame <= num:
+                    self.vacuum_line.set_data(self.vacuum_coords_np[:self.vacuum_end_frame+1, 0], self.vacuum_coords_np[:self.vacuum_end_frame+1, 1])
+                    self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:self.vacuum_end_frame+1, 2])
         else:
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
@@ -185,10 +188,6 @@ class SimulationProcessor:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             vacuum_coords = self.parse_gcode(vacuum_gcode)
 
-        # print(f"Parsed vacuum coordinates: {(vacuum_coords)}")
-        # start_line_guess = get_line_from_file(self.filename, vacuum_start_line+1) # 2138 is equal to 1816 in terms of frames. 
-        # end_line_guess = get_line_from_file(self.filename, vacuum_end_line-1) # 2146 is equal to 1822
-
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
         start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1) # Find index of line 2135 +3
@@ -215,8 +214,6 @@ class SimulationProcessor:
         print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
 
         # Graphing Logic
-
-
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
         self.vacuum_coords_np = np.array([[x,y,z] for _, x, y, z, _ in vacuum_coords])
         num_frames = len(self.coords_np)
@@ -226,7 +223,6 @@ class SimulationProcessor:
         ax = self.fig.add_subplot(111, projection='3d')
         self.line, = ax.plot([], [], [], lw=1.5, color='b')  # Default color
         self.vacuum_line, = ax.plot([], [], [], lw=1.5, color='r')  # Red for vacuum toolpath
-        #self.vacuum_line, = ax.plot(vacuum_coords_np[:, 0], vacuum_coords_np[:, 1], vacuum_coords_np[:, 2], lw=1.5, color='r')
         
         ax.set_xlim([-200, 200])
         ax.set_ylim([-200, 200])
@@ -236,11 +232,6 @@ class SimulationProcessor:
         ax.set_zlabel('Z')
         ax.set_title('G-code Toolpath Simulation')
 
-        # def init():
-        #     self.line.set_data([], [])
-        #     self.line.set_3d_properties([])
-        #     return self.line,
-    
         def init():
             self.line.set_data([], [])
             self.line.set_3d_properties([])
