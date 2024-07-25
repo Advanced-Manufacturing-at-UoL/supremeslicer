@@ -102,19 +102,18 @@ class SimulationProcessor:
         self.line.set_3d_properties(self.coords_np[:num, 2])
         self.line.set_color('b')
 
-        # Check if within the vacuum range
+        # Check if we need to plot the vacuum coordinates
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            vacuum_range = (self.vacuum_start_frame, self.vacuum_end_frame)
-            if vacuum_range[0] <= num <= vacuum_range[1]:
-                # Ensure the vacuum line is plotted for the current frame
+            if num >= self.vacuum_start_frame:
+                # Update the vacuum line data
                 self.vacuum_line.set_data(self.vacuum_coords_np[:num, 0], self.vacuum_coords_np[:num, 1])
                 self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:num, 2])
             else:
-                # Ensure the vacuum line is plotted up to the end frame
-                if self.vacuum_start_frame <= num:
-                    self.vacuum_line.set_data(self.vacuum_coords_np[:self.vacuum_end_frame+1, 0], self.vacuum_coords_np[:self.vacuum_end_frame+1, 1])
-                    self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:self.vacuum_end_frame+1, 2])
+                # Clear the vacuum line if we're before the vacuum range
+                self.vacuum_line.set_data([], [])
+                self.vacuum_line.set_3d_properties([])
         else:
+            # Clear the vacuum line if vacuum G-code was not found
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
 
