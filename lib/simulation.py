@@ -179,7 +179,7 @@ class SimulationProcessor:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             vacuum_coords = self.parse_gcode(vacuum_gcode)
 
-        print(f"Parsed vacuum coordinates: {(vacuum_coords)}")
+        # print(f"Parsed vacuum coordinates: {(vacuum_coords)}")
 
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
@@ -222,14 +222,18 @@ class SimulationProcessor:
         print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
         print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
 
+        # Graphing Logic
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
+        vacuum_coords_np = np.array([[x,y,z] for _, x, y, z, _ in vacuum_coords])
         num_frames = len(self.coords_np)
         self.interval = interval
 
         # Plot only once
-        self.line, = ax.plot([], [], [], lw=2, color='b')  # Default color
+        self.line, = ax.plot([], [], [], lw=1.5, color='b')  # Default color
+        self.vacuum_line, = ax.plot(vacuum_coords_np[:, 0], vacuum_coords_np[:, 1], vacuum_coords_np[:, 2], lw=1.5, color='r')
+        
         ax.set_xlim([-200, 200])
         ax.set_ylim([-200, 200])
         ax.set_zlim([0, 200])
