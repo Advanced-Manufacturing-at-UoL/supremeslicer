@@ -124,7 +124,7 @@ class SimulationProcessor:
             self.animating = True
             self.current_frame = int(self.slider.val)
             print(f"Playing animation and am on frame: {self.current_frame}")
-            print(f"The total number of frames ranges from {self.current_frame} to {len(self.coords_np)}")
+            print(f"Frames (n) ranges from {self.current_frame} to {len(self.coords_np)}")
             if hasattr(self, 'ani'):
                 self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
@@ -184,13 +184,13 @@ class SimulationProcessor:
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
         print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
-        start_line_guess = get_line_from_file(self.filename, 2135+3) # 2138 is equal to 1816 in terms of frames. 
-        end_line_guess = get_line_from_file(self.filename, 2135+11) # 2146 is equal to 1822
+        start_line_guess = get_line_from_file(self.filename, vacuum_start_line+1) # 2138 is equal to 1816 in terms of frames. 
+        end_line_guess = get_line_from_file(self.filename, vacuum_end_line-1) # 2146 is equal to 1822
         # Find index of line 2135 +3
-        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+3)
+        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
         print(f"Start Index of line 2135 + 3 in original line numbers: {start_index_in_original}")
         
-        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, 2135+9)
+        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
         print(f"End Index of line 2135 + 3 + 8 in original line numbers: {end_index_in_original}")
         print(f"Is this your start line? {start_line_guess}")
         print(f"Is this your end line {end_line_guess}")
@@ -199,9 +199,9 @@ class SimulationProcessor:
         # Now, if we know the correct index we need to be able to change the colour for the coordinates within those positions 
         # between start and end comment
         # This is regarding plotting the graph with vacuum gcode in red color.
-        convert = 2135 + 3 -1816 # this is equal to 322 so this is what we convert
-        new_start = 2135+3 - convert
-        new_end = new_start + 8 
+        convert = (vacuum_start_line+1) -start_index_in_original # this is equal to 322 so this is what we convert
+        new_start = (vacuum_start_line+1) - convert
+        new_end = (vacuum_end_line-1) - convert
 
         # Initialize vacuum injection start and end frames
         self.vacuum_start_frame = None
