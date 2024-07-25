@@ -180,44 +180,31 @@ class SimulationProcessor:
             vacuum_coords = self.parse_gcode(vacuum_gcode)
 
         # print(f"Parsed vacuum coordinates: {(vacuum_coords)}")
+        # start_line_guess = get_line_from_file(self.filename, vacuum_start_line+1) # 2138 is equal to 1816 in terms of frames. 
+        # end_line_guess = get_line_from_file(self.filename, vacuum_end_line-1) # 2146 is equal to 1822
 
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
         print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
-        start_line_guess = get_line_from_file(self.filename, vacuum_start_line+1) # 2138 is equal to 1816 in terms of frames. 
-        end_line_guess = get_line_from_file(self.filename, vacuum_end_line-1) # 2146 is equal to 1822
+        
         # Find index of line 2135 +3
         start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
-        print(f"Start Index of line 2135 + 3 in original line numbers: {start_index_in_original}")
+        print(f"Start Index of line {vacuum_start_line} in original line numbers: {start_index_in_original}")
         
         end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
-        print(f"End Index of line 2135 + 3 + 8 in original line numbers: {end_index_in_original}")
-        print(f"Is this your start line? {start_line_guess}")
-        print(f"Is this your end line {end_line_guess}")
-        print(vacuum_coords)
-
-        # Now, if we know the correct index we need to be able to change the colour for the coordinates within those positions 
-        # between start and end comment
-        # This is regarding plotting the graph with vacuum gcode in red color.
-        convert = (vacuum_start_line+1) -start_index_in_original # this is equal to 322 so this is what we convert
+        print(f"End Index of line {vacuum_end_line} in original line numbers: {end_index_in_original}")
+  
+        # Convert coordinate space
+        convert = (vacuum_start_line+1) -start_index_in_original # Conversion factor
         new_start = (vacuum_start_line+1) - convert
         new_end = (vacuum_end_line-1) - convert
 
         # Initialize vacuum injection start and end frames
-        self.vacuum_start_frame = None
-        self.vacuum_end_frame = None
+        self.vacuum_start_frame =  new_start if new_start is not None else None
+        self.vacuum_end_frame = new_end if new_end is not None else None
 
         self.vacuum_start_frame = new_start
         self.vacuum_end_frame = new_end
-
-        # Find the frame numbers for vacuum injection start and end
-        # if vacuum_coords:
-        #     for vac_coord in vacuum_coords:
-        #         if vac_coord[4] in line_number_to_index:
-        #             frame_index = line_number_to_index[vac_coord[4]]
-        #             if self.vacuum_start_frame is None:
-        #                 self.vacuum_start_frame = frame_index
-        #             self.vacuum_end_frame = frame_index
 
         print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
         print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
