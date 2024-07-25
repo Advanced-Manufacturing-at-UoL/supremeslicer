@@ -101,15 +101,21 @@ class SimulationProcessor:
         self.line.set_3d_properties(self.coords_np[:num, 2])
 
         # Highlight vacuum tool usage coordinates
+        # Update vacuum toolpath plotting
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
-                self.line.set_color('r')
+            vacuum_range = (self.vacuum_start_frame, self.vacuum_end_frame)
+            if vacuum_range[0] <= num <= vacuum_range[1]:
+                # Update vacuum line data within the range
+                self.vacuum_line.set_data(self.vacuum_coords_np[:num, 0], self.vacuum_coords_np[:num, 1])
+                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:num, 2])
             else:
-                self.line.set_color('b')
+                self.vacuum_line.set_data([], [])
+                self.vacuum_line.set_3d_properties([])
         else:
-            self.line.set_color('b')
+            self.vacuum_line.set_data([], [])
+            self.vacuum_line.set_3d_properties([])
 
-        return self.line,
+        return self.line, self.vacuum_line
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -185,15 +191,17 @@ class SimulationProcessor:
 
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
-        print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
-        
-        # Find index of line 2135 +3
-        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
-        print(f"Start Index of line {vacuum_start_line} in original line numbers: {start_index_in_original}")
-        
+        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1) # Find index of line 2135 +3
         end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
-        print(f"End Index of line {vacuum_end_line} in original line numbers: {end_index_in_original}")
+        
+        print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
+        print(f"Start Index of line {vacuum_start_line} in original line numbers: {start_index_in_original}")
+        print(f"End Index of line {vacuum_end_line} in original line numbers: {end_index_in_original}")     
   
+        if start_index_in_original is None or end_index_in_original is None:
+            print("Vacuum line indices not found in original line numbers.")
+            return
+
         # Convert coordinate space
         convert = (vacuum_start_line+1) -start_index_in_original # Conversion factor
         new_start = (vacuum_start_line+1) - convert
@@ -203,23 +211,22 @@ class SimulationProcessor:
         self.vacuum_start_frame =  new_start if new_start is not None else None
         self.vacuum_end_frame = new_end if new_end is not None else None
 
-        self.vacuum_start_frame = new_start
-        self.vacuum_end_frame = new_end
-
         print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
         print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
 
         # Graphing Logic
-        self.fig = plt.figure()
-        ax = self.fig.add_subplot(111, projection='3d')
+
+
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
-        vacuum_coords_np = np.array([[x,y,z] for _, x, y, z, _ in vacuum_coords])
+        self.vacuum_coords_np = np.array([[x,y,z] for _, x, y, z, _ in vacuum_coords])
         num_frames = len(self.coords_np)
         self.interval = interval
 
-        # Plot only once
+        self.fig = plt.figure()
+        ax = self.fig.add_subplot(111, projection='3d')
         self.line, = ax.plot([], [], [], lw=1.5, color='b')  # Default color
-        self.vacuum_line, = ax.plot(vacuum_coords_np[:, 0], vacuum_coords_np[:, 1], vacuum_coords_np[:, 2], lw=1.5, color='r')
+        self.vacuum_line, = ax.plot([], [], [], lw=1.5, color='r')  # Red for vacuum toolpath
+        #self.vacuum_line, = ax.plot(vacuum_coords_np[:, 0], vacuum_coords_np[:, 1], vacuum_coords_np[:, 2], lw=1.5, color='r')
         
         ax.set_xlim([-200, 200])
         ax.set_ylim([-200, 200])
@@ -229,10 +236,17 @@ class SimulationProcessor:
         ax.set_zlabel('Z')
         ax.set_title('G-code Toolpath Simulation')
 
+        # def init():
+        #     self.line.set_data([], [])
+        #     self.line.set_3d_properties([])
+        #     return self.line,
+    
         def init():
             self.line.set_data([], [])
             self.line.set_3d_properties([])
-            return self.line,
+            self.vacuum_line.set_data([], [])
+            self.vacuum_line.set_3d_properties([])
+            return self.line, self.vacuum_line
 
         # Initialize the plot without starting the animation
         init()
