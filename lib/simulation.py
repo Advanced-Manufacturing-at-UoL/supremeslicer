@@ -199,19 +199,25 @@ class SimulationProcessor:
         # Now, if we know the correct index we need to be able to change the colour for the coordinates within those positions 
         # between start and end comment
         # This is regarding plotting the graph with vacuum gcode in red color.
+        convert = 2135 + 3 -1816 # this is equal to 322 so this is what we convert
+        new_start = 2135+3 - convert
+        new_end = new_start + 8 
 
         # Initialize vacuum injection start and end frames
         self.vacuum_start_frame = None
         self.vacuum_end_frame = None
 
+        self.vacuum_start_frame = new_start
+        self.vacuum_end_frame = new_end
+
         # Find the frame numbers for vacuum injection start and end
-        if vacuum_coords:
-            for vac_coord in vacuum_coords:
-                if vac_coord[4] in line_number_to_index:
-                    frame_index = line_number_to_index[vac_coord[4]]
-                    if self.vacuum_start_frame is None:
-                        self.vacuum_start_frame = frame_index
-                    self.vacuum_end_frame = frame_index
+        # if vacuum_coords:
+        #     for vac_coord in vacuum_coords:
+        #         if vac_coord[4] in line_number_to_index:
+        #             frame_index = line_number_to_index[vac_coord[4]]
+        #             if self.vacuum_start_frame is None:
+        #                 self.vacuum_start_frame = frame_index
+        #             self.vacuum_end_frame = frame_index
 
         print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
         print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
