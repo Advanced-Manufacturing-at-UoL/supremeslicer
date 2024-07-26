@@ -126,12 +126,18 @@ class SimulationProcessor:
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
 
+        # Update slider value conditionally
+        if self.slider.val != num:
+            self.slider.set_val(num)
+        
+        self.fig.canvas.draw_idle()
+
         return self.line, self.vacuum_line
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
         frame = int(val)
-        self.current_frame = frame
+        # self.current_frame = frame
         self.update_plot(frame)
         self.fig.canvas.draw_idle()
 
