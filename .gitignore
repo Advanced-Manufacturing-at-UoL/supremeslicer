@@ -1,2 +1,2 @@
-lib\__pycache__
-tools\__pycache__
+lib\__pycache__\*
+tools\__pycache__\*

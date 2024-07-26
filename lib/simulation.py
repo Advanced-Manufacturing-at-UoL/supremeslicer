@@ -137,7 +137,6 @@ class SimulationProcessor:
     def update_slider(self, val):
         """Update the plot based on the slider value."""
         frame = int(val)
-        # self.current_frame = frame
         self.update_plot(frame)
         self.fig.canvas.draw_idle()
 
