@@ -241,12 +241,12 @@ class SimulationProcessor:
 
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
-        self.line, = ax.plot([], [], [], lw=1.5, color='b')  # Default color
-        self.vacuum_line, = ax.plot([], [], [], lw=1.5, color='r')  # Red for vacuum toolpath
+        self.line, = ax.plot([], [], [], lw=0.5, color='b')  # Default color
+        self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
         
-        ax.set_xlim([-200, 200])
-        ax.set_ylim([-200, 200])
-        ax.set_zlim([0, 200])
+        ax.set_xlim([0, 180])
+        ax.set_ylim([0, 180])
+        ax.set_zlim([0, 100])
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')

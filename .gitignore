@@ -1,2 +1,5 @@
-lib\__pycache__\*
-tools\__pycache__\*
+lib\__pycache__
+tools\__pycache__
+/lib/__pycache__
+lib/__pycache__/simulation.cpython-38.pyc
+lib/__pycache__/main_engine.cpython-38.pyc
