@@ -88,20 +88,27 @@ class MainEngine:
             print("Tool not programmed yet. Sorry!")
 
     def _run_simulation(self):
+        """Runs the simulation for plotting the toolpath."""
         try:
             print("1. Plot Original Toolpath")
             print("2. Plot Vacuum Toolpath")
-            user_in = int(input("Generate original or toolspecific toolpath?"))
+            user_in = int(input("Generate original or tool-specific toolpath?"))
             
+            # Retrieve the output folder and file
             self._output_folder()
+            
+            # Initialize the simulation processor
             simulation_processor = SimulationProcessor(self.filename)
             
             if user_in == 1:
                 simulation_processor.plot_original_toolpath()
-                print("Completed toolpath")
+                print("Completed plotting original toolpath.")
             elif user_in == 2:
                 simulation_processor.plot_vacuum_toolpath()
-                print("Completed toolpath")
+                print("Completed plotting vacuum toolpath.")
+            else:
+                print("Invalid selection. Please choose 1 or 2.")
+        
         except ValueError as ve:
             print(f"Value error: {ve}")
         except FileNotFoundError as fnfe:
@@ -148,7 +155,7 @@ class MainEngine:
                 self._run_simulation()
             elif user_in == 5:
                 print("Exiting SupremeSlicer\n")
-                Utils.sleep(2)
+                #Utils.sleep(2)
                 Utils.exit_on('Thank you\n')
             else:
                 print("Invalid option chosen!")
