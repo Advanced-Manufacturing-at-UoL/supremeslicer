@@ -51,6 +51,13 @@ class SimulationProcessor:
 
             parts = line.split()
             command = None
+
+            contains_e = any(part.startswith('E') for part in parts) # Check if line contains travel (E)
+
+            # If the line contains 'E', skip the line
+            if contains_e:
+                continue
+
             for part in parts:
                 if part.startswith('G'):
                     command = part
