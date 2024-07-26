@@ -93,10 +93,12 @@ class SimulationProcessor:
             interpolated_coords.append(coordinates[-1])
 
         return interpolated_coords
+    
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
         self.current_frame = num
+
         # Update the blue line data
         self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
         self.line.set_3d_properties(self.coords_np[:num, 2])
@@ -104,20 +106,24 @@ class SimulationProcessor:
 
         # Check if we need to plot the vacuum coordinates
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            if num >= self.vacuum_start_frame:
+            if num >= self.vacuum_start_frame: # If we're past the start frame
                 # Update the vacuum line data
                 self.vacuum_line.set_data(self.vacuum_coords_np[:num, 0], self.vacuum_coords_np[:num, 1])
                 self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:num, 2])
-            else:
+                self.vacuum_line.set_color('r')  # Set the color to red
+            elif num<= self.vacuum_start_frame:
                 # Clear the vacuum line if we're before the vacuum range
                 self.vacuum_line.set_data([], [])
                 self.vacuum_line.set_3d_properties([])
+                self.vacuum_line.set_color('r')  # Set the color to red
         else:
             # Clear the vacuum line if vacuum G-code was not found
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
+            self.vacuum_line.set_color('r')  # Set the color to red
 
         return self.line, self.vacuum_line
+
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
