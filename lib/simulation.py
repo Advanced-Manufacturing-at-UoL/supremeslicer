@@ -104,26 +104,29 @@ class SimulationProcessor:
         self.line.set_3d_properties(self.coords_np[:num, 2])
         self.line.set_color('b')
 
-        # Check if we need to plot the vacuum coordinates
+            # Check if we need to plot the vacuum coordinates
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            if num >= self.vacuum_start_frame: # If we're past the start frame
-                # Update the vacuum line data
-                self.vacuum_line.set_data(self.vacuum_coords_np[:num, 0], self.vacuum_coords_np[:num, 1])
-                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:num, 2])
-                self.vacuum_line.set_color('r')  # Set the color to red
-            elif num<= self.vacuum_start_frame:
-                # Clear the vacuum line if we're before the vacuum range
+            if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
+                # Update the vacuum line data frame by frame
+                vacuum_num = num - self.vacuum_start_frame + 1
+                self.vacuum_line.set_data(self.vacuum_coords_np[:vacuum_num, 0], self.vacuum_coords_np[:vacuum_num, 1])
+                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:vacuum_num, 2])
+                self.vacuum_line.set_color('r')
+            elif num > self.vacuum_end_frame:
+                # Keep the vacuum line data on the plot after the vacuum frames
+                self.vacuum_line.set_data(self.vacuum_coords_np[:, 0], self.vacuum_coords_np[:, 1])
+                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:, 2])
+                self.vacuum_line.set_color('r')
+            else:
+                # Clear the vacuum line before the vacuum frames
                 self.vacuum_line.set_data([], [])
                 self.vacuum_line.set_3d_properties([])
-                self.vacuum_line.set_color('r')  # Set the color to red
         else:
             # Clear the vacuum line if vacuum G-code was not found
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
-            self.vacuum_line.set_color('r')  # Set the color to red
 
         return self.line, self.vacuum_line
-
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
