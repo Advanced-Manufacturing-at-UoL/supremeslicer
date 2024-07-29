@@ -42,6 +42,7 @@ class SimulationProcessor:
     def parse_gcode(self, gcode):
         """Parse G-code and return a list of (command, x, y, z) coordinates with their original line numbers."""
         coordinates = []
+        travel_coordinates = []
         x, y, z = 0.0, 0.0, 0.0
 
         for line_number, line in enumerate(gcode):
@@ -51,7 +52,7 @@ class SimulationProcessor:
 
             parts = line.split()
             command = None
-
+            
             contains_e = any(part.startswith('E') for part in parts) # Check if line contains travel (E)
 
             # If the line contains 'E', skip the line
@@ -78,7 +79,10 @@ class SimulationProcessor:
                         z = 0.0
 
             if command is not None:
-                coordinates.append((command, x, y, z, line_number))
+                if command == 'G0': # If travel
+                    travel_coordinates.append((command, x, y, z, line_number))
+                else: # Extrusion move
+                    coordinates.append((command, x, y, z, line_number))
 
         interpolated_coords = []
         for i in range(len(coordinates) - 1):
@@ -99,7 +103,7 @@ class SimulationProcessor:
         if coordinates:
             interpolated_coords.append(coordinates[-1])
 
-        return interpolated_coords
+        return interpolated_coords, travel_coordinates
     
 
     def update_plot(self, num):
@@ -206,7 +210,7 @@ class SimulationProcessor:
         vacuum_coords = []
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            vacuum_coords = self.parse_gcode(vacuum_gcode)
+            vacuum_coords = self.parse_gcode(vacuum_gcode)#[0]
 
         # Extract the original line numbers from the parsed coordinates
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
@@ -243,6 +247,7 @@ class SimulationProcessor:
         ax = self.fig.add_subplot(111, projection='3d')
         self.line, = ax.plot([], [], [], lw=0.5, color='b')  # Default color
         self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
+        self.travel_line, = ax.plot([], [], [], lw=0.5, color='g')  # Green for travel path
         
         ax.set_xlim([0, 180])
         ax.set_ylim([0, 180])
@@ -257,7 +262,7 @@ class SimulationProcessor:
             self.line.set_3d_properties([])
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
-            return self.line, self.vacuum_line
+            return self.line, self.vacuum_line, self.travel_line
 
         # Initialize the plot without starting the animation
         init()
