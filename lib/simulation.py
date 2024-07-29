@@ -93,7 +93,6 @@ class SimulationProcessor:
             interpolated_coords.append(coordinates[-1])
 
         return interpolated_coords
-    
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
@@ -181,7 +180,6 @@ class SimulationProcessor:
         self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
-
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
         if not coordinates:
@@ -205,11 +203,11 @@ class SimulationProcessor:
         original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
         start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1) # Find index of line 2135 +3
         end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
-        
+
         print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
         print(f"Start Index of line {vacuum_start_line} in original line numbers: {start_index_in_original}")
         print(f"End Index of line {vacuum_end_line} in original line numbers: {end_index_in_original}")     
-  
+
         if start_index_in_original is None or end_index_in_original is None:
             print("Vacuum line indices not found in original line numbers.")
             return
@@ -236,7 +234,7 @@ class SimulationProcessor:
         ax = self.fig.add_subplot(111, projection='3d')
         self.line, = ax.plot([], [], [], lw=0.5, color='b')  # Default color
         self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
-        
+
         ax.set_xlim([0, 180])
         ax.set_ylim([0, 180])
         ax.set_zlim([0, 100])
@@ -345,15 +343,13 @@ class SimulationProcessor:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
 
-
 def get_line_from_file(filename, line_number):
     try:
         with open(filename, 'r') as file:
             for current_line_number, line in enumerate(file, start=1):
                 if current_line_number == line_number:
                     return line.strip()
-            # If line_number is not found
-            print(f"Line {line_number} not found in the file.")
+            print(f"Line {line_number} not found in the file.") # If the line isn't found
             return None
     except FileNotFoundError:
         print(f"Error: File {filename} not found.")

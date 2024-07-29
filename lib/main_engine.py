@@ -4,7 +4,6 @@ from tools.vacuum_pnp import VacuumPnP
 from lib.simulation import SimulationProcessor
 import os
 
-
 """Main Engine Class for running the overall program"""
 class MainEngine:
     def __init__(self):
@@ -27,14 +26,14 @@ class MainEngine:
 
     def _output_folder(self):
         output_directory = 'output/'
-        
+
         # Get list of files matching the pattern
         gcode_files = [f for f in os.listdir(output_directory) if f.endswith('.gcode')]
-        
+
         if not gcode_files:
             print("No .gcode files found in the input directory.")
             return
-        
+
         # Assuming there's only one .gcode file or you want to process the first one found
         self.filename = os.path.join(output_directory, gcode_files[0])
         print(f"Found G-code file: {self.filename}")
@@ -44,20 +43,20 @@ class MainEngine:
         config_file = 'tools/vacuum_config.yaml'
 
         output_directory = 'output/'
-        
+
         # Get list of files matching the pattern
         gcode_files = [f for f in os.listdir(output_directory) if f.endswith('.gcode')]
-        
+
         if not gcode_files:
             print("No .gcode files found in the input directory.")
             return
-        
+
         # Assuming there's only one .gcode file or you want to process the first one found
         self.filename = os.path.join(output_directory, gcode_files[0])
         print(f"Found G-code file: {self.filename}")
 
         self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
-        
+
         print("Would you like to...")
         print("1. Generate and inject Gcode")
         print("2. Read Gcode file output")
@@ -93,13 +92,13 @@ class MainEngine:
             print("1. Plot Original Toolpath")
             print("2. Plot Vacuum Toolpath")
             user_in = int(input("Generate original or tool-specific toolpath?"))
-            
+
             # Retrieve the output folder and file
             self._output_folder()
-            
+
             # Initialize the simulation processor
             simulation_processor = SimulationProcessor(self.filename)
-            
+
             if user_in == 1:
                 simulation_processor.plot_original_toolpath()
                 print("Completed plotting original toolpath.")
@@ -108,7 +107,7 @@ class MainEngine:
                 print("Completed plotting vacuum toolpath.")
             else:
                 print("Invalid selection. Please choose 1 or 2.")
-        
+
         except ValueError as ve:
             print(f"Value error: {ve}")
         except FileNotFoundError as fnfe:
@@ -138,7 +137,7 @@ class MainEngine:
             print("3. Access tools")
             print("4. Create Simulation")
             print("5. Exit\n")
-            
+
             try:
                 user_in = int(input("Please select an option\n"))
             except ValueError:
@@ -159,4 +158,3 @@ class MainEngine:
                 Utils.exit_on('Thank you\n')
             else:
                 print("Invalid option chosen!")
-

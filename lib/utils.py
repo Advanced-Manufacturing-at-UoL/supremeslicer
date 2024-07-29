@@ -10,6 +10,7 @@ class Utils:
         try:
             with open(file_path, 'r') as file:
                 content = file.read()
+
                 # Replace single backslashes with double backslashes
                 content = re.sub(r'\\', r'\\\\', content)
                 return yaml.safe_load(content)
@@ -30,7 +31,6 @@ class Utils:
         yaml_data = Utils.read_yaml(file_path)
         Utils._print_yaml_recursive(yaml_data, level = 0)
 
-
     def _print_yaml_recursive(yaml_data, level=0):
         """
         Recursively print YAML data with indentation to show structure.
@@ -49,7 +49,6 @@ class Utils:
                 Utils._print_yaml_recursive(item, level + 1)
         else:
             print(f"{indent}{yaml_data}")
-
 
     @staticmethod
     def start_timer():
