@@ -3,6 +3,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 
 class SimulationProcessor:
     def __init__(self, filename):
@@ -181,6 +183,19 @@ class SimulationProcessor:
         self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
+    def add_shading(self, ax):
+        """Add shading beneath the toolpath."""
+        # Create a shading effect by adding polygons
+        if len(self.coords_np) < 2:
+            return
+
+        # Generate vertices for the shading (create a filled surface below the path)
+        xs, ys, zs = self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2]
+        vertices = [list(zip(xs, ys, zs))]
+        
+        # Add the shaded area beneath the path
+        shaded_area = Poly3DCollection(vertices, alpha=0.3, facecolors='blue', linewidths=0.5)
+        ax.add_collection3d(shaded_area)
 
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
@@ -202,25 +217,25 @@ class SimulationProcessor:
             vacuum_coords = self.parse_gcode(vacuum_gcode)
 
         # Extract the original line numbers from the parsed coordinates
-        original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
-        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1) # Find index of line 2135 +3
-        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
+        original_line_numbers = [coord[4] for coord in coordinates]
+        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line + 1)
+        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line + 1)
         
         print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
         print(f"Start Index of line {vacuum_start_line} in original line numbers: {start_index_in_original}")
         print(f"End Index of line {vacuum_end_line} in original line numbers: {end_index_in_original}")     
-  
+
         if start_index_in_original is None or end_index_in_original is None:
             print("Vacuum line indices not found in original line numbers.")
             return
 
         # Convert coordinate space
-        convert = (vacuum_start_line+1) -start_index_in_original # Conversion factor
-        new_start = (vacuum_start_line+1) - convert
-        new_end = (vacuum_end_line-1) - convert
+        convert = (vacuum_start_line + 1) - start_index_in_original
+        new_start = (vacuum_start_line + 1) - convert
+        new_end = (vacuum_end_line - 1) - convert
 
         # Initialize vacuum injection start and end frames
-        self.vacuum_start_frame =  new_start if new_start is not None else None
+        self.vacuum_start_frame = new_start if new_start is not None else None
         self.vacuum_end_frame = new_end if new_end is not None else None
 
         print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
@@ -228,7 +243,7 @@ class SimulationProcessor:
 
         # Graphing Logic
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
-        self.vacuum_coords_np = np.array([[x,y,z] for _, x, y, z, _ in vacuum_coords])
+        self.vacuum_coords_np = np.array([[x, y, z] for _, x, y, z, _ in vacuum_coords])
         num_frames = len(self.coords_np)
         self.interval = interval
 
@@ -236,7 +251,10 @@ class SimulationProcessor:
         ax = self.fig.add_subplot(111, projection='3d')
         self.line, = ax.plot([], [], [], lw=0.5, color='b')  # Default color
         self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
-        
+
+        # Add shading to the plot
+        self.add_shading(ax)
+
         ax.set_xlim([0, 180])
         ax.set_ylim([0, 180])
         ax.set_zlim([0, 100])
@@ -275,6 +293,7 @@ class SimulationProcessor:
         self.slider.on_changed(self.update_slider)
 
         plt.show()
+
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
