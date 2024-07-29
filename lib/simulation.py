@@ -42,7 +42,6 @@ class SimulationProcessor:
     def parse_gcode(self, gcode):
         """Parse G-code and return a list of (command, x, y, z) coordinates with their original line numbers."""
         coordinates = []
-        travel_coordinates = []
         x, y, z = 0.0, 0.0, 0.0
 
         for line_number, line in enumerate(gcode):
@@ -52,8 +51,7 @@ class SimulationProcessor:
 
             parts = line.split()
             command = None
-            
-            contains_e = any(part.startswith('E') for part in parts) # Check if line contains travel (E)
+            contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E)
 
             # If the line contains 'E', skip the line
             if contains_e:
@@ -80,8 +78,8 @@ class SimulationProcessor:
 
             if command is not None:
                 if command == 'G0': # If travel
-                    travel_coordinates.append((command, x, y, z, line_number))
-                else: # Extrusion move
+                    continue
+                else: 
                     coordinates.append((command, x, y, z, line_number))
 
         interpolated_coords = []
@@ -90,7 +88,7 @@ class SimulationProcessor:
             cmd2, x2, y2, z2, ln2 = coordinates[i + 1]
 
             if cmd1.startswith('G0') and cmd2.startswith('G1'):
-                num_steps = 10  # Adjust number of interpolation steps
+                num_steps = 1  # Adjust number of interpolation steps
                 xs = np.linspace(x1, x2, num_steps)
                 ys = np.linspace(y1, y2, num_steps)
                 zs = np.linspace(z1, z2, num_steps)
@@ -103,8 +101,7 @@ class SimulationProcessor:
         if coordinates:
             interpolated_coords.append(coordinates[-1])
 
-        return interpolated_coords, travel_coordinates
-    
+        return interpolated_coords
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
@@ -115,25 +112,21 @@ class SimulationProcessor:
         self.line.set_3d_properties(self.coords_np[:num, 2])
         self.line.set_color('b')
 
-            # Check if we need to plot the vacuum coordinates
+        # Update vacuum line data
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
-                # Update the vacuum line data frame by frame
-                vacuum_num = num - self.vacuum_start_frame + 1
+                vacuum_num = num - self.vacuum_start_frame
                 self.vacuum_line.set_data(self.vacuum_coords_np[:vacuum_num, 0], self.vacuum_coords_np[:vacuum_num, 1])
                 self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:vacuum_num, 2])
                 self.vacuum_line.set_color('r')
             elif num > self.vacuum_end_frame:
-                # Keep the vacuum line data on the plot after the vacuum frames
                 self.vacuum_line.set_data(self.vacuum_coords_np[:, 0], self.vacuum_coords_np[:, 1])
                 self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:, 2])
                 self.vacuum_line.set_color('r')
             else:
-                # Clear the vacuum line before the vacuum frames
                 self.vacuum_line.set_data([], [])
                 self.vacuum_line.set_3d_properties([])
         else:
-            # Clear the vacuum line if vacuum G-code was not found
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
 
@@ -142,7 +135,6 @@ class SimulationProcessor:
             self.slider.set_val(num)
         
         self.fig.canvas.draw_idle()
-
         return self.line, self.vacuum_line
 
     def update_slider(self, val):
@@ -156,8 +148,6 @@ class SimulationProcessor:
         if not self.animating:
             self.animating = True
             self.current_frame = int(self.slider.val)
-            print(f"Playing animation and am on frame: {self.current_frame}")
-            print(f"Frames (n) ranges from {self.current_frame} to {len(self.coords_np)}")
             if hasattr(self, 'ani'):
                 self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
@@ -192,62 +182,22 @@ class SimulationProcessor:
         self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
-
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
         if not coordinates:
             print("No coordinates to animate.")
             return
 
-        # Filtered G-code lines and create mapping
-        filtered_lines = [line.strip() for line in self.gcode if line.strip() and not line.strip().startswith(';')]
-        line_number_to_index = self.create_line_number_mapping(filtered_lines)
-
-        # Find vacuum G-code lines
-        vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-        print(f"Vacuum G-code lines: {vacuum_start_line}, {vacuum_end_line}")
-
-        vacuum_coords = []
-        if vacuum_start_line is not None and vacuum_end_line is not None:
-            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            vacuum_coords = self.parse_gcode(vacuum_gcode)#[0]
-
-        # Extract the original line numbers from the parsed coordinates
-        original_line_numbers = [coord[4] for coord in coordinates]  # This gets an index list regarding the original line count
-        start_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1) # Find index of line 2135 +3
-        end_index_in_original = self.find_index_in_original_line_numbers(original_line_numbers, vacuum_start_line+1)
-        
-        print(f"The original line numbers array size from the parsed coordinates are {len(original_line_numbers)}\n")
-        print(f"Start Index of line {vacuum_start_line} in original line numbers: {start_index_in_original}")
-        print(f"End Index of line {vacuum_end_line} in original line numbers: {end_index_in_original}")     
-  
-        if start_index_in_original is None or end_index_in_original is None:
-            print("Vacuum line indices not found in original line numbers.")
-            return
-
-        # Convert coordinate space
-        convert = (vacuum_start_line+1) -start_index_in_original # Conversion factor
-        new_start = (vacuum_start_line+1) - convert
-        new_end = (vacuum_end_line-1) - convert
-
-        # Initialize vacuum injection start and end frames
-        self.vacuum_start_frame =  new_start if new_start is not None else None
-        self.vacuum_end_frame = new_end if new_end is not None else None
-
-        print(f"Vacuum injection starts at frame: {self.vacuum_start_frame}")
-        print(f"Vacuum injection ends at frame: {self.vacuum_end_frame}")
-
-        # Graphing Logic
+        # Extract coordinates
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
-        self.vacuum_coords_np = np.array([[x,y,z] for _, x, y, z, _ in vacuum_coords])
         num_frames = len(self.coords_np)
         self.interval = interval
 
+        # Set up the plot
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
         self.line, = ax.plot([], [], [], lw=0.5, color='b')  # Default color
         self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
-        self.travel_line, = ax.plot([], [], [], lw=0.5, color='g')  # Green for travel path
         
         ax.set_xlim([0, 180])
         ax.set_ylim([0, 180])
@@ -262,9 +212,8 @@ class SimulationProcessor:
             self.line.set_3d_properties([])
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
-            return self.line, self.vacuum_line, self.travel_line
+            return self.line, self.vacuum_line
 
-        # Initialize the plot without starting the animation
         init()
 
         # Create playback controls
@@ -356,20 +305,3 @@ class SimulationProcessor:
         except ValueError:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
-
-
-def get_line_from_file(filename, line_number):
-    try:
-        with open(filename, 'r') as file:
-            for current_line_number, line in enumerate(file, start=1):
-                if current_line_number == line_number:
-                    return line.strip()
-            # If line_number is not found
-            print(f"Line {line_number} not found in the file.")
-            return None
-    except FileNotFoundError:
-        print(f"Error: File {filename} not found.")
-        return None
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
