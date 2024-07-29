@@ -5,7 +5,6 @@ import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-
 class SimulationProcessor:
     def __init__(self, filename):
         """Initialize class"""
@@ -95,7 +94,6 @@ class SimulationProcessor:
             interpolated_coords.append(coordinates[-1])
 
         return interpolated_coords
-    
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
@@ -106,36 +104,31 @@ class SimulationProcessor:
         self.line.set_3d_properties(self.coords_np[:num, 2])
         self.line.set_color('b')
 
-        # Update the shading
-        if hasattr(self, 'shading_polygons'):
-            if num < len(self.shading_polygons):
-                # Remove old shading
-                if hasattr(self, 'shaded_polygons'):
-                    for poly in self.shaded_polygons:
-                        poly.remove()
-
-                # Add new shading
-                self.shaded_polygons = []
-                for poly in self.shading_polygons[num - 1]:
-                    shaded_area = Poly3DCollection([poly], alpha=0.3, facecolors='blue', linewidths=0.5)
-                    self.shaded_polygons.append(shaded_area)
-                    self.ax.add_collection3d(shaded_area)
-
-        # Update the vacuum line
+        # Check if we need to plot the vacuum coordinates
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
+                # Update the vacuum line data frame by frame
                 vacuum_num = num - self.vacuum_start_frame + 1
                 self.vacuum_line.set_data(self.vacuum_coords_np[:vacuum_num, 0], self.vacuum_coords_np[:vacuum_num, 1])
                 self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:vacuum_num, 2])
                 self.vacuum_line.set_color('r')
+                
+                # Apply shading to the current segment
+                self.apply_shading(num)
             elif num > self.vacuum_end_frame:
+                # Keep the vacuum line data on the plot after the vacuum frames
                 self.vacuum_line.set_data(self.vacuum_coords_np[:, 0], self.vacuum_coords_np[:, 1])
                 self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:, 2])
                 self.vacuum_line.set_color('r')
+                
+                # Apply shading to the last segment
+                self.apply_shading(self.vacuum_end_frame)
             else:
+                # Clear the vacuum line before the vacuum frames
                 self.vacuum_line.set_data([], [])
                 self.vacuum_line.set_3d_properties([])
         else:
+            # Clear the vacuum line if vacuum G-code was not found
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
 
@@ -145,6 +138,33 @@ class SimulationProcessor:
         
         self.fig.canvas.draw_idle()
 
+        return self.line, self.vacuum_line
+
+    def apply_shading(self, num):
+        """Apply shading to the line segment being drawn."""
+        if num < 1:
+            return
+
+        # Get current and previous coordinates
+        if num > 0:
+            x1, y1, z1 = self.coords_np[num - 1]
+            x2, y2, z2 = self.coords_np[num]
+            
+            # Create a single shaded segment
+            poly = [
+                (x1, y1, 0),  # Start of the line in the Z=0 plane
+                (x2, y2, 0),  # End of the line in the Z=0 plane
+                (x2, y2, z2),  # End of the line in the Z=z plane
+                (x1, y1, z1)   # Start of the line in the Z=z plane
+            ]
+
+            # Clear previous shaded areas
+            for artist in self.ax.artists:
+                artist.remove()
+
+            # Add the shaded area beneath the current line segment
+            shaded_area = Poly3DCollection([poly], alpha=0.3, facecolors='blue', linewidths=0.5)
+            self.ax.add_collection3d(shaded_area)
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -192,37 +212,6 @@ class SimulationProcessor:
         self.current_frame = int(new_val)
         self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
-
-    def add_shading(self, ax):
-        """Add shading beneath the toolpath."""
-        # Create a shading effect by adding polygons
-        if len(self.coords_np) < 2:
-            return
-
-        # Generate vertices for the shading (create a filled surface below the path)
-        xs, ys, zs = self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2]
-        vertices = [list(zip(xs, ys, zs))]
-        
-        # Add the shaded area beneath the path
-        shaded_area = Poly3DCollection(vertices, alpha=0.3, facecolors='blue', linewidths=0.5)
-        ax.add_collection3d(shaded_area)
-
-    def generate_shading_polygons(self, frame):
-        """Generate polygons for shading based on the current frame."""
-        if frame < 1 or frame >= len(self.coords_np):
-            return []
-
-        polygons = []
-        for i in range(frame):
-            x1, y1, z1 = self.coords_np[i]
-            x2, y2, z2 = self.coords_np[i + 1]
-
-            # Create a polygon (quad) for shading beneath the toolpath
-            polygon = [[x1, y1, 0], [x2, y2, 0], [x2, y2, z2], [x1, y1, z1]]
-            polygons.append(polygon)
-
-        return polygons
-
 
     def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
@@ -274,19 +263,13 @@ class SimulationProcessor:
         num_frames = len(self.coords_np)
         self.interval = interval
 
-        # Precompute shading data
-        self.precompute_shading()
-
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.line, = self.ax.plot([], [], [], lw=0.5, color='b')  # Default color
         self.vacuum_line, = self.ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
 
-        # Initialize shading polygons list
-        self.shaded_polygons = []
-
-        # Add shading to the plot
-        self.add_shading(self.ax)
+        # Initialize the plot without starting the animation
+        self.apply_shading(0)  # Apply initial shading to avoid artifacts
 
         self.ax.set_xlim([0, 180])
         self.ax.set_ylim([0, 180])
@@ -326,9 +309,6 @@ class SimulationProcessor:
         self.slider.on_changed(self.update_slider)
 
         plt.show()
-
-
-
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
@@ -398,7 +378,6 @@ class SimulationProcessor:
         except ValueError:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
-
 
 def get_line_from_file(filename, line_number):
     try:
