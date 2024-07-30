@@ -51,11 +51,7 @@ class SimulationProcessor:
 
             parts = line.split()
             command = None
-            contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E)
-
-            # If the line contains 'E', skip the line
-            if contains_e:
-                continue
+            contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E) as if it doesn't contain this skip
 
             for part in parts:
                 if part.startswith('G'):
@@ -75,20 +71,28 @@ class SimulationProcessor:
                         z = float(part[1:])
                     except ValueError:
                         z = 0.0
-
+                elif part.startswith('E'):
+                    contains_e 
+            
+            # G0 doesn't work as we only use this in vacuum tool. Therefore we just need to see if E is present
             if command is not None:
-                if command == 'G0': # If travel
-                    continue
-                else: 
+                if contains_e:
+                    print("Contains E so appending")
                     coordinates.append((command, x, y, z, line_number))
+                else:
+                    print("Doesnt contain E")
+                    continue
+        
+        # with open ('output.csv', 'w') as f:
+        #     f.writelines(coordinates)
 
         interpolated_coords = []
         for i in range(len(coordinates) - 1):
             cmd1, x1, y1, z1, ln1 = coordinates[i]
             cmd2, x2, y2, z2, ln2 = coordinates[i + 1]
 
-            if cmd1.startswith('G0') and cmd2.startswith('G1'):
-                num_steps = 1  # Adjust number of interpolation steps
+            if cmd1.startswith('G0') and cmd2.startswith('G1') and contains_e:
+                num_steps = 10  # Adjust number of interpolation steps
                 xs = np.linspace(x1, x2, num_steps)
                 ys = np.linspace(y1, y2, num_steps)
                 zs = np.linspace(z1, z2, num_steps)
