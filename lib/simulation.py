@@ -43,7 +43,7 @@ class SimulationProcessor:
         """Parse G-code and return lists of (command, x, y, z) coordinates."""
         coordinates = []
         raw_e = []
-        x, y, z = 0.0, 0.0, 0.0
+        x, y, z, e = 0.0, 0.0, 0.0, None
 
         for line_number, line in enumerate(gcode):
             line = line.strip()
@@ -64,10 +64,12 @@ class SimulationProcessor:
                 elif part.startswith('Z'):
                     z = float(part[1:]) if part[1:].replace('.', '', 1).isdigit() else z
                 elif part.startswith('E'):
-                    if command is not None:
-                        raw_e.append((command, x, y, z, line_number))
+                    e = float(part[1:]) if part[1:].replace('.', '', 1).isdigit() else None
+
             if command is not None and not command.startswith('G0'):
                 coordinates.append((command, x, y, z, line_number))
+            if e is not None:
+                raw_e.append((command, x, y, z, e, line_number))
 
         return coordinates, raw_e
 
@@ -152,7 +154,7 @@ class SimulationProcessor:
 
         # Extract coordinates
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
-        self.raw_e_np = np.array([[x, y, z] for _, x, y, z, _ in raw_e])
+        self.raw_e_np = np.array([[x, y, z] for _, x, y, z, _, _ in raw_e])
 
         num_frames = max(len(self.coords_np), len(self.raw_e_np))
         self.interval = interval
@@ -269,10 +271,3 @@ class SimulationProcessor:
         except ValueError:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
-
-
-
-    def plot_original_toolpath(self):
-        """Plot the original toolpath from the full G-code."""
-        coordinates, raw_e = self.parse_gcode(self.gcode)
-        self.plot_toolpath_animation(coordinates, raw_e, interval=50)
