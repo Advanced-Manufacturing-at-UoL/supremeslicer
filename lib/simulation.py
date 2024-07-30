@@ -42,6 +42,7 @@ class SimulationProcessor:
     def parse_gcode(self, gcode):
         """Parse G-code and return a list of (command, x, y, z) coordinates with their original line numbers."""
         coordinates = []
+        raw_e = []
         x, y, z = 0.0, 0.0, 0.0
 
         for line_number, line in enumerate(gcode):
@@ -50,9 +51,15 @@ class SimulationProcessor:
                 continue
 
             parts = line.split()
+
+            with open ('raw.csv', 'w') as f:
+                for part in parts:
+                    f.write(str(part))
+                    f.write('\n')
+
             command = None
             contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E) as if it doesn't contain this skip
-
+            
             for part in parts:
                 if part.startswith('G'):
                     command = part
@@ -72,19 +79,23 @@ class SimulationProcessor:
                     except ValueError:
                         z = 0.0
                 elif part.startswith('E'):
-                    contains_e 
-            
+                    #contains_e # the command is a print command. Therefore, we want to append this to a list
+                    if command is not None:
+                        coordinates.append((command, x, y, z, line_number))
+                        raw_e.append((command, x, y, z, line_number))           
             # G0 doesn't work as we only use this in vacuum tool. Therefore we just need to see if E is present
-            if command is not None:
-                if contains_e:
-                    print("Contains E so appending")
-                    coordinates.append((command, x, y, z, line_number))
-                else:
-                    print("Doesnt contain E")
-                    continue
+
         
-        # with open ('output.csv', 'w') as f:
-        #     f.writelines(coordinates)
+        with open ('e_data.csv', 'w') as f:
+            f.write(str(raw_e))
+            for el in raw_e:
+                f.write(str(el))
+                f.write('\n')
+
+        with open ('output.csv', 'w') as f:
+            for coordinate in coordinates:
+                f.write(str(coordinate))
+                f.write('\n')
 
         interpolated_coords = []
         for i in range(len(coordinates) - 1):
@@ -309,3 +320,10 @@ class SimulationProcessor:
         except ValueError:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
+
+
+
+    def plot_original_toolpath(self):
+        """Plot the original toolpath from the full G-code."""
+        coordinates = self.parse_gcode(self.gcode)
+        self.plot_toolpath_animation(coordinates, interval=50)
