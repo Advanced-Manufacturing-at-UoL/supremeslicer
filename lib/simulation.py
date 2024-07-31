@@ -40,10 +40,9 @@ class SimulationProcessor:
         return start_line, end_line
 
     def parse_gcode(self, gcode):
-        """Parse G-code and return lists of (command, x, y, z) coordinates."""
+        """Parse G-code and return a list of (command, x, y, z) coordinates with their original line numbers."""
         coordinates = []
-        raw_e = []
-        x, y, z, e = 0.0, 0.0, 0.0, None
+        x, y, z = 0.0, 0.0, 0.0
 
         for line_number, line in enumerate(gcode):
             line = line.strip()
@@ -51,55 +50,104 @@ class SimulationProcessor:
                 continue
 
             parts = line.split()
+
+            with open ('raw.csv', 'w') as f:
+                for part in parts:
+                    f.write(str(part))
+                    f.write('\n')
+
             command = None
-            contains_e = any(part.startswith('E') for part in parts)
-            
+            contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E) as if it doesn't contain this skip
+
             for part in parts:
                 if part.startswith('G'):
                     command = part
                 elif part.startswith('X'):
-                    x = float(part[1:]) if part[1:].replace('.', '', 1).isdigit() else x
+                    try:
+                        x = float(part[1:])
+                    except ValueError:
+                        x = 0.0
                 elif part.startswith('Y'):
-                    y = float(part[1:]) if part[1:].replace('.', '', 1).isdigit() else y
+                    try:
+                        y = float(part[1:])
+                    except ValueError:
+                        y = 0.0
                 elif part.startswith('Z'):
-                    z = float(part[1:]) if part[1:].replace('.', '', 1).isdigit() else z
+                    try:
+                        z = float(part[1:])
+                    except ValueError:
+                        z = 0.0
                 elif part.startswith('E'):
-                    e = float(part[1:]) if part[1:].replace('.', '', 1).isdigit() else None
+                    #contains_e # the command is a print command. Therefore, we want to append this to a list
+                    continue
+            # G0 doesn't work as we only use this in vacuum tool. Therefore we just need to see if E is present
+            if command is not None:
+                if contains_e:
+                    print("Contains E so appending")
+                    coordinates.append((command, x, y, z, line_number))
+                else:
+                    print("Doesnt contain E")
+                    continue
+        
+        with open ('output.csv', 'w') as f:
+            for coordinate in coordinates:
+                f.write(str(coordinate))
+                f.write('\n')
 
-            if command is not None and not command.startswith('G0'):
-                coordinates.append((command, x, y, z, line_number))
-            if e is not None:
-                raw_e.append((command, x, y, z, e, line_number))
+        interpolated_coords = []
+        for i in range(len(coordinates) - 1):
+            cmd1, x1, y1, z1, ln1 = coordinates[i]
+            cmd2, x2, y2, z2, ln2 = coordinates[i + 1]
 
-        return coordinates, raw_e
+            if cmd1.startswith('G0') and cmd2.startswith('G1') and contains_e:
+                num_steps = 10  # Adjust number of interpolation steps
+                xs = np.linspace(x1, x2, num_steps)
+                ys = np.linspace(y1, y2, num_steps)
+                zs = np.linspace(z1, z2, num_steps)
+
+                for j in range(num_steps):
+                    interpolated_coords.append(('G1', xs[j], ys[j], zs[j], ln1))
+            else:
+                interpolated_coords.append((cmd1, x1, y1, z1, ln1))
+
+        if coordinates:
+            interpolated_coords.append(coordinates[-1])
+
+        return interpolated_coords
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
         self.current_frame = num
 
-        # Update the toolpath line data
-        if len(self.coords_np) > 1:
-            self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
-            self.line.set_3d_properties(self.coords_np[:num, 2])
-        else:
-            self.line.set_data([], [])
-            self.line.set_3d_properties([])
+        # Update the blue line data
+        self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
+        self.line.set_3d_properties(self.coords_np[:num, 2])
+        self.line.set_color('b')
 
-        # Update the raw_e line data
-        if len(self.raw_e_np) > 1:
-            # Plot raw_e lines with connections
-            self.raw_e_line.set_data(self.raw_e_np[:num, 0], self.raw_e_np[:num, 1])
-            self.raw_e_line.set_3d_properties(self.raw_e_np[:num, 2])
+        # Update vacuum line data
+        if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+            if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
+                vacuum_num = num - self.vacuum_start_frame
+                self.vacuum_line.set_data(self.vacuum_coords_np[:vacuum_num, 0], self.vacuum_coords_np[:vacuum_num, 1])
+                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:vacuum_num, 2])
+                self.vacuum_line.set_color('r')
+            elif num > self.vacuum_end_frame:
+                self.vacuum_line.set_data(self.vacuum_coords_np[:, 0], self.vacuum_coords_np[:, 1])
+                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:, 2])
+                self.vacuum_line.set_color('r')
+            else:
+                self.vacuum_line.set_data([], [])
+                self.vacuum_line.set_3d_properties([])
         else:
-            self.raw_e_line.set_data([], [])
-            self.raw_e_line.set_3d_properties([])
+            self.vacuum_line.set_data([], [])
+            self.vacuum_line.set_3d_properties([])
 
         # Update slider value conditionally
         if self.slider.val != num:
             self.slider.set_val(num)
-
+        
         self.fig.canvas.draw_idle()
-        return self.line, self.raw_e_line
+        return self.line, self.vacuum_line
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -146,25 +194,23 @@ class SimulationProcessor:
         self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
-    def plot_toolpath_animation(self, coordinates, raw_e, interval):
+    def plot_toolpath_animation(self, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
-        if not coordinates and not raw_e:
+        if not coordinates:
             print("No coordinates to animate.")
             return
 
         # Extract coordinates
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
-        self.raw_e_np = np.array([[x, y, z] for _, x, y, z, _, _ in raw_e])
-
-        num_frames = max(len(self.coords_np), len(self.raw_e_np))
+        num_frames = len(self.coords_np)
         self.interval = interval
 
         # Set up the plot
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
-        self.line, = ax.plot([], [], [], lw=1.5, color='b')  # Default color for coordinates
-        self.raw_e_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for raw_e
-
+        self.line, = ax.plot([], [], [], lw=0.5, color='b')  # Default color
+        self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
+        
         ax.set_xlim([0, 180])
         ax.set_ylim([0, 180])
         ax.set_zlim([0, 100])
@@ -176,9 +222,9 @@ class SimulationProcessor:
         def init():
             self.line.set_data([], [])
             self.line.set_3d_properties([])
-            self.raw_e_line.set_data([], [])
-            self.raw_e_line.set_3d_properties([])
-            return self.line, self.raw_e_line
+            self.vacuum_line.set_data([], [])
+            self.vacuum_line.set_3d_properties([])
+            return self.line, self.vacuum_line
 
         init()
 
@@ -205,16 +251,16 @@ class SimulationProcessor:
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
-        coordinates, raw_e = self.parse_gcode(self.gcode)
-        self.plot_toolpath_animation(coordinates, raw_e, interval=50)
+        coordinates = self.parse_gcode(self.gcode)
+        self.plot_toolpath_animation(coordinates, interval=50)
 
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            coordinates, raw_e = self.parse_gcode(vacuum_gcode)
-            self.plot_toolpath_animation(coordinates, raw_e, interval=50)
+            coordinates = self.parse_gcode(vacuum_gcode)
+            self.plot_toolpath_animation(coordinates, interval=50)
         else:
             print("No vacuum injection G-code found.")
 
@@ -271,3 +317,10 @@ class SimulationProcessor:
         except ValueError:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
+
+
+
+    def plot_original_toolpath(self):
+        """Plot the original toolpath from the full G-code."""
+        coordinates = self.parse_gcode(self.gcode)
+        self.plot_toolpath_animation(coordinates, interval=50)
