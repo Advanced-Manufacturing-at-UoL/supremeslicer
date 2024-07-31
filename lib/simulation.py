@@ -52,8 +52,8 @@ class SimulationProcessor:
 
             parts = line.split()
             command = None
-
-            contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E) as if it doesn't contain this skip
+            contains_e = False
+            # contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E) as if it doesn't contain this skip
 
             for part in parts:
                 if part.startswith('G'):
@@ -74,25 +74,25 @@ class SimulationProcessor:
                     except ValueError:
                         z = 0.0
                 elif part.startswith('E'):
+                    contains_e = True
                     #contains_e # the command is a print command. Therefore, we want to append this to a list
-                    if command is not None:
-                        e_coordinates.append((command, x, y, z, line_number))
+                    #if command is not None:
+                    #    e_coordinates.append((command, x, y, z, line_number))
 
             # G0 doesn't work as we only use this in vacuum tool. Therefore we just need to see if E is present
             if command is not None:
-                coordinates.append((command, x, y, z, line_number))
-        
+                if contains_e:
+                    e_coordinates.append((command, x, y, z, line_number))
+                else:
+                    coordinates.append((command, x, y, z, line_number))
+                
+            return e_coordinates, coordinates
+
         # Add logic to say if the e_coordinates are also in the coordinates array then plot it. If they are not, do not connect those lines
-        
-        common_e_coords = set(e_coordinates).intersection(set(coordinates))
-        print("e coordiantes that are in coordinates")
+        # common_e_coords = set(e_coordinates).intersection(set(coordinates))
+        # common_e_coords_list = list(common_e_coords)
 
-        for coord in common_e_coords:
-            print(coord)
-
-        common_e_coords_list = list(common_e_coords)
-
-        return common_e_coords_list, coordinates
+        # return common_e_coords_list, coordinates
         
     
         # interpolated_coords = []
@@ -123,6 +123,20 @@ class SimulationProcessor:
         """Update the plot with each new coordinate."""
         self.current_frame = num
 
+        # Update the line plot for common_e_coords_list
+        if self.common_e_coords_np.size > 0:
+            if num > 0:
+                self.line.set_data(self.common_e_coords_np[:num, 0], self.common_e_coords_np[:num, 1])
+                self.line.set_3d_properties(self.common_e_coords_np[:num, 2])
+            else:
+                self.line.set_data([], [])
+                self.line.set_3d_properties([])
+
+        # Original line should be a scatter unless it's the normal line 
+        # Update scatter plot for coordinates
+        self.scatter.set_data(self.coords_np[:, 0], self.coords_np[:, 1])
+        self.scatter.set_3d_properties(self.coords_np[:, 2])
+
         # Update the blue line data
         self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
         self.line.set_3d_properties(self.coords_np[:num, 2])
@@ -151,7 +165,7 @@ class SimulationProcessor:
             self.slider.set_val(num)
         
         self.fig.canvas.draw_idle()
-        return self.line, self.vacuum_line
+        return self.line, self.vacuum_line, self.scatter
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -198,13 +212,18 @@ class SimulationProcessor:
         self.update_plot(self.current_frame)
         self.fig.canvas.draw_idle()
 
-    def plot_toolpath_animation(self, coordinates, interval):
+    def plot_toolpath_animation(self, common_e_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
-        if not coordinates:
+        if not common_e_coords_list and not coordinates:
             print("No coordinates to animate.")
             return
 
         # Extract coordinates
+        if common_e_coords_list:
+            self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in common_e_coords_list])
+        else:
+            self.common_e_coords_np = np.empty((0, 3))
+        
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
         num_frames = len(self.coords_np)
         self.interval = interval
@@ -212,8 +231,11 @@ class SimulationProcessor:
         # Set up the plot
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
-        self.line, = ax.plot([], [], [], lw=0.5, color='b')  # Default color
+        self.line, = ax.plot([], [], [], lw=0.5, color='g')  # Default color
         self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
+
+        # Create scatter plot for coordinates
+        self.scatter = ax.scatter(self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2], c='b', marker='o')  # Blue for scatter
         
         ax.set_xlim([0, 180])
         ax.set_ylim([0, 180])
@@ -228,7 +250,7 @@ class SimulationProcessor:
             self.line.set_3d_properties([])
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
-            return self.line, self.vacuum_line
+            return self.line, self.vacuum_line, self.scatter
 
         init()
 
@@ -252,6 +274,7 @@ class SimulationProcessor:
         self.slider.on_changed(self.update_slider)
 
         plt.show()
+
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
@@ -324,5 +347,5 @@ class SimulationProcessor:
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
-        coordinates = self.parse_gcode(self.gcode)
-        self.plot_toolpath_animation(coordinates, interval=50)
+        common_e_coords_list, coordinates = self.parse_gcode(self.gcode)
+        self.plot_toolpath_animation(common_e_coords_list, coordinates, interval=50)
