@@ -214,10 +214,14 @@ class SimulationProcessor:
 
     def plot_toolpath_animation(self, common_e_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
-        if not common_e_coords_list and not coordinates:
-            print("No coordinates to animate.")
-            return
+        # if not common_e_coords_list and not coordinates:
+        #     print("No coordinates to animate.")
+        #     return
 
+        print("Printing common e coords list\n")
+        print(common_e_coords_list)
+        print("Printing coordinates list")
+        print(coordinates)
         # Extract coordinates
         if common_e_coords_list:
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in common_e_coords_list])
