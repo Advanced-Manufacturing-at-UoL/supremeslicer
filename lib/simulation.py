@@ -123,9 +123,9 @@ class SimulationProcessor:
         """Update the plot with each new coordinate."""
         self.current_frame = num
 
-        # Original line should be a scatter unless it's the normal line 
-        self.scatter.set_data(self.coords_np[:, 0], self.coords_np[:, 1])
-        self.scatter.set_3d_properties(self.coords_np[:, 2])
+        # Update the scatter plot
+        if self.coords_np.size > 0:
+            self.scatter._offsets3d = (self.coords_np[:num, 0], self.coords_np[:num, 1], self.coords_np[:num, 2])
 
         # Update the blue line data
         self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
@@ -213,15 +213,6 @@ class SimulationProcessor:
 
     def plot_toolpath_animation(self, common_e_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
-        # if not common_e_coords_list and not coordinates:
-        #     print("No coordinates to animate.")
-        #     return
-
-        print("Printing common e coords list\n")
-        print(common_e_coords_list)
-        print("Printing coordinates list")
-        print(coordinates)
-        # Extract coordinates
         if common_e_coords_list:
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in common_e_coords_list])
         else:
@@ -253,6 +244,7 @@ class SimulationProcessor:
             self.line.set_3d_properties([])
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
+            self.scatter._offsets3d = ([], [], [])
             return self.line, self.vacuum_line, self.scatter
 
         init()
@@ -278,15 +270,10 @@ class SimulationProcessor:
 
         plt.show()
 
-
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
-        coordinates, e_coordinates = self.parse_gcode(self.gcode)
-        print("Within plot_original_toolpath we are reading gcode and printing coordinates\n")
-        print(coordinates)
-        print("Now printing e coordinates")
-        print(e_coordinates)
-        self.plot_toolpath_animation(coordinates, e_coordinates,interval=50)
+        common_e_coords_list, coordinates = self.parse_gcode(self.gcode)
+        self.plot_toolpath_animation(common_e_coords_list, coordinates, interval=50)
 
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
