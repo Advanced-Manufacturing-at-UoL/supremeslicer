@@ -87,8 +87,11 @@ class SimulationProcessor:
         """Update the plot with each new coordinate."""
         self.current_frame = num
 
+        # Plot the original path (just the travel parts) which is original coords - common coords
         if self.coords_np.size > 0:
-            self.scatter._offsets3d = (self.coords_np[:num, 0], self.coords_np[:num, 1], self.coords_np[:num, 2])
+            self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
+            self.line.set_3d_properties(self.coords_np[:num, 2])
+            #self.scatter._offsets3d = (self.coords_np[:num, 0], self.coords_np[:num, 1], self.coords_np[:num, 2])
 
         #self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
         #self.line.set_3d_properties(self.coords_np[:num, 2])
