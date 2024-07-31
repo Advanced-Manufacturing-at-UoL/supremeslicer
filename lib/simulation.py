@@ -76,61 +76,68 @@ class SimulationProcessor:
                 elif part.startswith('E'):
                     contains_e = True
 
-            if command and contains_e:
-                e_coordinates.append((command, x, y, z, line_number))
-            if command:
-                coordinates.append((command, x, y, z, line_number))
-        
+            if command and (command == 'G0' or command == 'G1'):
+                coordinates.append((command, x, y, z, contains_e, line_number))
+                if contains_e:
+                    e_coordinates.append((command, x, y, z, line_number))
+
         return e_coordinates, coordinates
+
+    def split_into_segments(self, coordinates):
+        """Split coordinates into individual segments based on extrusion commands."""
+        segments = []
+        current_segment = []
+
+        for command, x, y, z, contains_e, _ in coordinates:
+            if contains_e:
+                current_segment.append((x, y, z))
+            elif current_segment:
+                segments.append(current_segment)
+                current_segment = []
+
+        if current_segment:
+            segments.append(current_segment)
+
+        return segments
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
         self.current_frame = num
 
-        # Plot the original path (just the travel parts) which is original coords - common coords
-        if self.coords_np.size > 0:
-            self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
-            self.line.set_3d_properties(self.coords_np[:num, 2])
-            #self.scatter._offsets3d = (self.coords_np[:num, 0], self.coords_np[:num, 1], self.coords_np[:num, 2])
+        # Clear existing lines
+        for line in self.lines:
+            line.remove()
+        self.lines = []
 
-        #self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
-        #self.line.set_3d_properties(self.coords_np[:num, 2])
-        #self.line.set_color('b')
+        # Plot the segments up to the current frame
+        for segment in self.segments[:num]:
+            if segment:  # Ensure the segment is not empty
+                x_vals, y_vals, z_vals = zip(*segment)
+                line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
+                self.lines.append(line)
 
-        if self.common_e_coords_np.size > 0:
-            if num > 0:
-                self.line.set_data(self.common_e_coords_np[:num, 0], self.common_e_coords_np[:num, 1])
-                self.line.set_3d_properties(self.common_e_coords_np[:num, 2])
-            else:
-                self.line.set_data([], [])
-                self.line.set_3d_properties([])
-
+        # Plot the vacuum line if within the range
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
-                vacuum_num = num - self.vacuum_start_frame
-                self.vacuum_line.set_data(self.vacuum_coords_np[:vacuum_num, 0], self.vacuum_coords_np[:vacuum_num, 1])
-                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:vacuum_num, 2])
-                self.vacuum_line.set_color('r')
-            elif num > self.vacuum_end_frame:
-                self.vacuum_line.set_data(self.vacuum_coords_np[:, 0], self.vacuum_coords_np[:, 1])
-                self.vacuum_line.set_3d_properties(self.vacuum_coords_np[:, 2])
-                self.vacuum_line.set_color('r')
-            else:
-                self.vacuum_line.set_data([], [])
-                self.vacuum_line.set_3d_properties([])
-        else:
-            self.vacuum_line.set_data([], [])
-            self.vacuum_line.set_3d_properties([])
+                vacuum_segment = self.vacuum_coords_np[:num - self.vacuum_start_frame]
+                if len(vacuum_segment) > 0:
+                    x_vals, y_vals, z_vals = zip(*vacuum_segment)
+                    vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
+                    self.lines.append(vacuum_line)
 
         if self.slider.val != num:
             self.slider.set_val(num)
-        
+
         self.fig.canvas.draw_idle()
-        return self.line, self.vacuum_line, self.scatter
+        return self.lines
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
-        frame = int(val)
+        print(f"Slider value returning {val}")
+        try:
+            frame = int(val)
+        except ValueError:
+            frame = 0
         self.update_plot(frame)
         self.fig.canvas.draw_idle()
 
@@ -138,11 +145,14 @@ class SimulationProcessor:
         """Start or resume the animation from the current slider value."""
         if not self.animating:
             self.animating = True
-            self.current_frame = int(self.slider.val)
+            try:
+                self.current_frame = int(self.slider.val)
+            except ValueError:
+                self.current_frame = 0
             if hasattr(self, 'ani'):
                 self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
-                self.fig, self.update_plot, frames=range(self.current_frame, len(self.coords_np)),
+                self.fig, self.update_plot, frames=range(self.current_frame, len(self.segments)),
                 interval=self.interval, blit=False, repeat=False
             )
             self.fig.canvas.draw_idle()
@@ -158,7 +168,10 @@ class SimulationProcessor:
     def forward_frame(self, event):
         """Move one frame forward."""
         current_val = self.slider.val
-        new_val = min(current_val + 1, self.slider.valmax)
+        try:
+            new_val = min(int(current_val) + 1, self.slider.valmax)
+        except ValueError:
+            new_val = self.slider.valmax
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
         self.update_plot(self.current_frame)
@@ -167,7 +180,10 @@ class SimulationProcessor:
     def backward_frame(self, event):
         """Move one frame backward."""
         current_val = self.slider.val
-        new_val = max(current_val - 1, self.slider.valmin)
+        try:
+            new_val = max(int(current_val) - 1, self.slider.valmin)
+        except ValueError:
+            new_val = self.slider.valmin
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
         self.update_plot(self.current_frame)
@@ -176,34 +192,37 @@ class SimulationProcessor:
     def plot_toolpath_animation(self, common_e_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
         self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in common_e_coords_list])
-        self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
-        num_frames = len(self.coords_np)
+        self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
+        self.segments = self.split_into_segments(coordinates)
+        num_frames = len(self.segments)
         self.interval = interval
+
+        if num_frames == 0:
+            print("No segments found in the G-code. Cannot create animation.")
+            return
 
         # Set up the plot
         self.fig = plt.figure()
-        ax = self.fig.add_subplot(111, projection='3d')
-        self.line, = ax.plot([], [], [], lw=0.5, color='g')  # Default color for the printer toolpath
-        self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.lines = []
 
         # Create scatter plot for coordinates
-        self.scatter = ax.scatter(self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2], c='b', marker='o')  # Blue for scatter
+        self.scatter = self.ax.scatter(self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2], c='b', marker='o')  # Blue for scatter
         
-        ax.set_xlim([0, 180])
-        ax.set_ylim([0, 180])
-        ax.set_zlim([0, 100])
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        ax.set_title('G-code Toolpath Simulation')
+        self.ax.set_xlim([0, 180])
+        self.ax.set_ylim([0, 180])
+        self.ax.set_zlim([0, 100])
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+        self.ax.set_title('G-code Toolpath Simulation')
 
         def init():
-            self.line.set_data([], [])
-            self.line.set_3d_properties([])
-            self.vacuum_line.set_data([], [])
-            self.vacuum_line.set_3d_properties([])
+            for line in self.lines:
+                line.set_data([], [])
+                line.set_3d_properties([])
             self.scatter._offsets3d = ([], [], [])
-            return self.line, self.vacuum_line, self.scatter
+            return self.lines
 
         init()
 
@@ -231,6 +250,9 @@ class SimulationProcessor:
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
         common_e_coords_list, coordinates = self.parse_gcode(self.gcode)
+        if not coordinates:
+            print("No coordinates found in the G-code.")
+            return
         self.plot_toolpath_animation(common_e_coords_list, coordinates, interval=50)
 
     def plot_vacuum_toolpath(self):
@@ -239,6 +261,9 @@ class SimulationProcessor:
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             e_coordinates, coordinates = self.parse_gcode(vacuum_gcode)
+            if not coordinates:
+                print("No coordinates found in the vacuum G-code.")
+                return
             self.plot_toolpath_animation(e_coordinates, coordinates, interval=50)
         else:
             print("No vacuum injection G-code found.")
