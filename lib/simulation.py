@@ -117,6 +117,7 @@ class SimulationProcessor:
                 self.lines.append(line)
 
         # Plot the vacuum line if within the range
+        # This logic doesn't work -> Revert to working logic from before?
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
                 vacuum_segment = self.vacuum_coords_np[:num - self.vacuum_start_frame]
@@ -133,7 +134,6 @@ class SimulationProcessor:
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
-        print(f"Slider value returning {val}")
         try:
             frame = int(val)
         except ValueError:
@@ -207,7 +207,7 @@ class SimulationProcessor:
         self.lines = []
 
         # Create scatter plot for coordinates
-        self.scatter = self.ax.scatter(self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2], c='b', marker='o')  # Blue for scatter
+        #self.scatter = self.ax.scatter(self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2], c='b', marker='o')  # Blue for scatter
         
         self.ax.set_xlim([0, 180])
         self.ax.set_ylim([0, 180])
@@ -221,7 +221,7 @@ class SimulationProcessor:
             for line in self.lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
-            self.scatter._offsets3d = ([], [], [])
+            #self.scatter._offsets3d = ([], [], [])
             return self.lines
 
         init()
@@ -260,11 +260,12 @@ class SimulationProcessor:
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            e_coordinates, coordinates = self.parse_gcode(vacuum_gcode)
-            if not coordinates:
+            vac_coords, = self.parse_gcode(vacuum_gcode)
+            print("Trying to plot the vacuum GCode")
+            if not vac_coords:
                 print("No coordinates found in the vacuum G-code.")
                 return
-            self.plot_toolpath_animation(e_coordinates, coordinates, interval=50)
+            self.plot_toolpath_animation(vac_coords, interval=50)
         else:
             print("No vacuum injection G-code found.")
 

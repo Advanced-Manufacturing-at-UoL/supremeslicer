@@ -28,6 +28,17 @@ G92 E0
 ; Filament gcode
 M109 S200 ; set temperature and wait for it to be reached
 ;LAYER_CHANGE
+;-----------------------------------------------
+; VacuumPnP TOOL G CODE INJECTION START
+G0 Z5.00 ; Move to zHop position for clearance
+G0 X10.00 Y20.00
+G0 Z30.00 ; Move to startPosition
+M98 P1 ; Execute suction state
+G0 X40.00 Y50.00
+G0 Z60.00 ; Move to endPosition
+G0 Z5.00 ; Move to zHop position for clearance
+; VacuumPnP TOOL G CODE INJECTION END
+;-----------------------------------------------
 ;Z:0.3
 ;HEIGHT:0.3
 G1 Z0.3 F7800
@@ -1978,6 +1989,17 @@ G1 X93.253 Y99.102 E1.01086
 M107
 M106 S35.7
 ;LAYER_CHANGE
+;-----------------------------------------------
+; VacuumPnP TOOL G CODE INJECTION START
+G0 Z5.00 ; Move to zHop position for clearance
+G0 X10.00 Y20.00
+G0 Z30.00 ; Move to startPosition
+M98 P1 ; Execute suction state
+G0 X40.00 Y50.00
+G0 Z60.00 ; Move to endPosition
+G0 Z5.00 ; Move to zHop position for clearance
+; VacuumPnP TOOL G CODE INJECTION END
+;-----------------------------------------------
 ;Z:0.5
 ;HEIGHT:0.2
 ; stop printing object box.stl id:0 copy 0
@@ -6338,6 +6360,17 @@ G1 F5400
 G1 X78.332 Y102.224 E0.42537
 M106 S226.95
 ;LAYER_CHANGE
+;-----------------------------------------------
+; VacuumPnP TOOL G CODE INJECTION START
+G0 Z5.00 ; Move to zHop position for clearance
+G0 X10.00 Y20.00
+G0 Z30.00 ; Move to startPosition
+M98 P1 ; Execute suction state
+G0 X40.00 Y50.00
+G0 Z60.00 ; Move to endPosition
+G0 Z5.00 ; Move to zHop position for clearance
+; VacuumPnP TOOL G CODE INJECTION END
+;-----------------------------------------------
 ;Z:1.9
 ;HEIGHT:0.2
 ; stop printing object box.stl id:0 copy 0
