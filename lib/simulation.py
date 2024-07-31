@@ -45,8 +45,6 @@ class SimulationProcessor:
         e_coordinates = []
         x, y, z = 0.0, 0.0, 0.0
 
-        
-
         for line_number, line in enumerate(gcode):
             line = line.strip()
             if not line or line.startswith(';'):
@@ -85,9 +83,17 @@ class SimulationProcessor:
                 coordinates.append((command, x, y, z, line_number))
         
         # Add logic to say if the e_coordinates are also in the coordinates array then plot it. If they are not, do not connect those lines
-        import sys
-        sys.exit()
-        return e_coordinates
+        
+        common_e_coords = set(e_coordinates).intersection(set(coordinates))
+        print("e coordiantes that are in coordinates")
+
+        for coord in common_e_coords:
+            print(coord)
+
+        common_e_coords_list = list(common_e_coords)
+
+        return common_e_coords_list, coordinates
+        
     
         # interpolated_coords = []
         # e_interpolated_coords = []
@@ -315,8 +321,6 @@ class SimulationProcessor:
         except ValueError:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
-
-
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
