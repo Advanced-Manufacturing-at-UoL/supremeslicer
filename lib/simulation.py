@@ -42,21 +42,19 @@ class SimulationProcessor:
     def parse_gcode(self, gcode):
         """Parse G-code and return a list of (command, x, y, z) coordinates with their original line numbers."""
         coordinates = []
+        e_coordinates = []
         x, y, z = 0.0, 0.0, 0.0
+
+        
 
         for line_number, line in enumerate(gcode):
             line = line.strip()
             if not line or line.startswith(';'):
-                continue
+                continue # ignore comments
 
             parts = line.split()
-
-            with open ('raw.csv', 'w') as f:
-                for part in parts:
-                    f.write(str(part))
-                    f.write('\n')
-
             command = None
+
             contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E) as if it doesn't contain this skip
 
             for part in parts:
@@ -79,41 +77,41 @@ class SimulationProcessor:
                         z = 0.0
                 elif part.startswith('E'):
                     #contains_e # the command is a print command. Therefore, we want to append this to a list
-                    continue
+                    if command is not None:
+                        e_coordinates.append((command, x, y, z, line_number))
+
             # G0 doesn't work as we only use this in vacuum tool. Therefore we just need to see if E is present
             if command is not None:
-                if contains_e:
-                    print("Contains E so appending")
-                    coordinates.append((command, x, y, z, line_number))
-                else:
-                    print("Doesnt contain E")
-                    continue
+                coordinates.append((command, x, y, z, line_number))
         
-        with open ('output.csv', 'w') as f:
-            for coordinate in coordinates:
-                f.write(str(coordinate))
-                f.write('\n')
+        # Add logic to say if the e_coordinates are also in the coordinates array then plot it. If they are not, do not connect those lines
+        import sys
+        sys.exit()
+        return e_coordinates
+    
+        # interpolated_coords = []
+        # e_interpolated_coords = []
 
-        interpolated_coords = []
-        for i in range(len(coordinates) - 1):
-            cmd1, x1, y1, z1, ln1 = coordinates[i]
-            cmd2, x2, y2, z2, ln2 = coordinates[i + 1]
+        # for i in range(len(coordinates) - 1):
+        #     cmd1, x1, y1, z1, ln1 = coordinates[i]
+        #     cmd2, x2, y2, z2, ln2 = coordinates[i + 1]
 
-            if cmd1.startswith('G0') and cmd2.startswith('G1') and contains_e:
-                num_steps = 10  # Adjust number of interpolation steps
-                xs = np.linspace(x1, x2, num_steps)
-                ys = np.linspace(y1, y2, num_steps)
-                zs = np.linspace(z1, z2, num_steps)
+        #     if cmd1.startswith('G0') and cmd2.startswith('G1') and contains_e:
+        #         print(f"Command contains e: {cmd1} \n{cmd2}")
+        #         num_steps = 1#0  # Adjust number of interpolation steps
+        #         xs = np.linspace(x1, x2, num_steps)
+        #         ys = np.linspace(y1, y2, num_steps)
+        #         zs = np.linspace(z1, z2, num_steps)
+        #         for j in range(num_steps):
+        #             interpolated_coords.append(('G1', xs[j], ys[j], zs[j], ln1))
+        #             interpolated
+        #     else:
+        #         interpolated_coords.append((cmd1, x1, y1, z1, ln1))
 
-                for j in range(num_steps):
-                    interpolated_coords.append(('G1', xs[j], ys[j], zs[j], ln1))
-            else:
-                interpolated_coords.append((cmd1, x1, y1, z1, ln1))
+        # if coordinates:
+        #     interpolated_coords.append(coordinates[-1])
 
-        if coordinates:
-            interpolated_coords.append(coordinates[-1])
-
-        return interpolated_coords
+        # return interpolated_coords
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
