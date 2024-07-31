@@ -24,7 +24,7 @@ class SimulationProcessor:
             return []
 
     def find_vacuum_gcode_lines(self):
-        """Find the start and end lines of the vacuum G-code in terms of relevant G-code commands."""
+        """Find the start and end lines of the vacuum G-code."""
         start_comment = "; VacuumPnP TOOL G CODE INJECTION START"
         end_comment = "; VacuumPnP TOOL G CODE INJECTION END"
 
@@ -40,20 +40,20 @@ class SimulationProcessor:
         return start_line, end_line
 
     def parse_gcode(self, gcode):
-        """Parse G-code and return a list of (command, x, y, z) coordinates with their original line numbers."""
-        coordinates = []
-        e_coordinates = []
+        """Parse G-code and return lists of extrusion and travel coordinates."""
+        e_coordinates = []  # Commands with extrusion
+        coordinates = []    # All commands
+
         x, y, z = 0.0, 0.0, 0.0
 
         for line_number, line in enumerate(gcode):
             line = line.strip()
             if not line or line.startswith(';'):
-                continue # ignore comments
+                continue  # ignore comments
 
             parts = line.split()
             command = None
             contains_e = False
-            # contains_e = any(part.startswith('E') for part in parts) # Check if line contains extrusion (E) as if it doesn't contain this skip
 
             for part in parts:
                 if part.startswith('G'):
@@ -75,64 +75,25 @@ class SimulationProcessor:
                         z = 0.0
                 elif part.startswith('E'):
                     contains_e = True
-                    #contains_e # the command is a print command. Therefore, we want to append this to a list
-                    #if command is not None:
-                    #    e_coordinates.append((command, x, y, z, line_number))
 
-            # G0 doesn't work as we only use this in vacuum tool. Therefore we just need to see if E is present
-            if command is not None:
-                if contains_e:
-                    e_coordinates.append((command, x, y, z, line_number))
-                else:
-                    coordinates.append((command, x, y, z, line_number))
-                
-        return e_coordinates, coordinates
-
-        # Add logic to say if the e_coordinates are also in the coordinates array then plot it. If they are not, do not connect those lines
-        # common_e_coords = set(e_coordinates).intersection(set(coordinates))
-        # common_e_coords_list = list(common_e_coords)
-
-        # return common_e_coords_list, coordinates
+            if command and contains_e:
+                e_coordinates.append((command, x, y, z, line_number))
+            if command:
+                coordinates.append((command, x, y, z, line_number))
         
-    
-        # interpolated_coords = []
-        # e_interpolated_coords = []
-
-        # for i in range(len(coordinates) - 1):
-        #     cmd1, x1, y1, z1, ln1 = coordinates[i]
-        #     cmd2, x2, y2, z2, ln2 = coordinates[i + 1]
-
-        #     if cmd1.startswith('G0') and cmd2.startswith('G1') and contains_e:
-        #         print(f"Command contains e: {cmd1} \n{cmd2}")
-        #         num_steps = 1#0  # Adjust number of interpolation steps
-        #         xs = np.linspace(x1, x2, num_steps)
-        #         ys = np.linspace(y1, y2, num_steps)
-        #         zs = np.linspace(z1, z2, num_steps)
-        #         for j in range(num_steps):
-        #             interpolated_coords.append(('G1', xs[j], ys[j], zs[j], ln1))
-        #             interpolated
-        #     else:
-        #         interpolated_coords.append((cmd1, x1, y1, z1, ln1))
-
-        # if coordinates:
-        #     interpolated_coords.append(coordinates[-1])
-
-        # return interpolated_coords
+        return e_coordinates, coordinates
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
         self.current_frame = num
 
-        # Update the scatter plot
         if self.coords_np.size > 0:
             self.scatter._offsets3d = (self.coords_np[:num, 0], self.coords_np[:num, 1], self.coords_np[:num, 2])
 
-        # Update the blue line data
-        self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
-        self.line.set_3d_properties(self.coords_np[:num, 2])
-        self.line.set_color('b')
+        #self.line.set_data(self.coords_np[:num, 0], self.coords_np[:num, 1])
+        #self.line.set_3d_properties(self.coords_np[:num, 2])
+        #self.line.set_color('b')
 
-        # Update the line plot for common_e_coords_list
         if self.common_e_coords_np.size > 0:
             if num > 0:
                 self.line.set_data(self.common_e_coords_np[:num, 0], self.common_e_coords_np[:num, 1])
@@ -141,7 +102,6 @@ class SimulationProcessor:
                 self.line.set_data([], [])
                 self.line.set_3d_properties([])
 
-        # Update vacuum line data
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
                 vacuum_num = num - self.vacuum_start_frame
@@ -159,7 +119,6 @@ class SimulationProcessor:
             self.vacuum_line.set_data([], [])
             self.vacuum_line.set_3d_properties([])
 
-        # Update slider value conditionally
         if self.slider.val != num:
             self.slider.set_val(num)
         
@@ -213,11 +172,7 @@ class SimulationProcessor:
 
     def plot_toolpath_animation(self, common_e_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
-        if common_e_coords_list:
-            self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in common_e_coords_list])
-        else:
-            self.common_e_coords_np = np.empty((0, 3))
-        
+        self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in common_e_coords_list])
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _ in coordinates])
         num_frames = len(self.coords_np)
         self.interval = interval
@@ -225,7 +180,7 @@ class SimulationProcessor:
         # Set up the plot
         self.fig = plt.figure()
         ax = self.fig.add_subplot(111, projection='3d')
-        self.line, = ax.plot([], [], [], lw=0.5, color='g')  # Default color
+        self.line, = ax.plot([], [], [], lw=0.5, color='g')  # Default color for the printer toolpath
         self.vacuum_line, = ax.plot([], [], [], lw=0.5, color='r')  # Red for vacuum toolpath
 
         # Create scatter plot for coordinates
@@ -280,8 +235,8 @@ class SimulationProcessor:
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            coordinates = self.parse_gcode(vacuum_gcode)
-            self.plot_toolpath_animation(coordinates, interval=50)
+            e_coordinates, coordinates = self.parse_gcode(vacuum_gcode)
+            self.plot_toolpath_animation(e_coordinates, coordinates, interval=50)
         else:
             print("No vacuum injection G-code found.")
 
@@ -338,8 +293,3 @@ class SimulationProcessor:
         except ValueError:
             print(f"Line number {target_line_number} not found in the original line numbers.")
             return None
-
-    def plot_original_toolpath(self):
-        """Plot the original toolpath from the full G-code."""
-        common_e_coords_list, coordinates = self.parse_gcode(self.gcode)
-        self.plot_toolpath_animation(common_e_coords_list, coordinates, interval=50)
