@@ -3,24 +3,35 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
-
 import re
 import time
+import yaml
 
 class SimulationProcessor:
     def __init__(self, filename):
         """Initialize class"""
+        self.config_file = 'configs/simulation.yaml'
         self.filename = filename
+        self.config = self.load_config()
         self.gcode = self.read_gcode()
         self.animating = False
         self.current_frame = 0
         self.vacuum_start_frame = None
         self.vacuum_end_frame = None
         self.vacuum_coords = []
+        self.show_travel = self.config.get('show_travel', 0)  # Flag from YAML configuration
 
         self.last_slider_update = time.time()
         self.slider_update_interval = 0.1
 
+    def load_config(self):
+        """Load configuration from a YAML file."""
+        try:
+            with open(self.config_file, 'r') as f:
+                return yaml.safe_load(f)
+        except FileNotFoundError:
+            print(f"Error: Configuration file {self.config_file} not found.")
+            return {}
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -51,12 +62,11 @@ class SimulationProcessor:
 
         return start_line, end_line
 
-
     def parse_gcode(self, gcode):
         """Parse G-code and return lists of extrusion and travel coordinates."""
         e_coordinates = []  # Commands with extrusion
         coordinates = []    # All commands
-        travel_coordinates = [] # Just the travel commands
+        travel_coordinates = []  # Just the travel commands
 
         x, y, z = 0.0, 0.0, 0.0
         command_pattern = re.compile(r'([G]\d+)')
@@ -126,12 +136,13 @@ class SimulationProcessor:
                 line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
                 self.lines.append(line)
 
-        # Plot the travel lines
-        travel_lines = self.travel_coords_np[:num]
-        if len(travel_lines) > 0:
-            x_vals, y_vals, z_vals = zip(*travel_lines)
-            travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)  # Green for travel lines
-            self.lines.append(travel_line)
+        # Plot the travel lines if the flag is set
+        if self.show_travel:
+            travel_lines = self.travel_coords_np[:num]
+            if len(travel_lines) > 0:
+                x_vals, y_vals, z_vals = zip(*travel_lines)
+                travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)  # Green for travel lines
+                self.lines.append(travel_line)
 
         # Plot the vacuum line if within the range
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
@@ -150,9 +161,8 @@ class SimulationProcessor:
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
+        current_time = time.time()
 
-        current_time= time.time()
-        
         if current_time - int(self.last_slider_update) > self.slider_update_interval:
             self.last_slider_update = current_time
             try:
@@ -273,7 +283,6 @@ class SimulationProcessor:
 
         plt.show()
 
-
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
         e_coords, travel_coords, coordinates = self.parse_gcode(self.gcode)
@@ -289,10 +298,9 @@ class SimulationProcessor:
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             e_coords, travel_coords, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-            self.vacuum_coords = [(x, y, z) for _, x, y, z, _ in vacuum_coordinates]
+            self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
 
         self.plot_toolpath_animation(self.vacuum_coords, travel_coords, vacuum_coordinates, interval=50)
-
 
     def create_line_number_mapping(self, filtered_lines):
         """Create a mapping of original line numbers to their indices in the filtered list."""
