@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 
 import re
-
+import time
 
 class SimulationProcessor:
     def __init__(self, filename):
@@ -17,6 +17,10 @@ class SimulationProcessor:
         self.vacuum_start_frame = None
         self.vacuum_end_frame = None
         self.vacuum_coords = []
+
+        self.last_slider_update = time.time()
+        self.slider_update_interval = 0.1
+
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -136,12 +140,17 @@ class SimulationProcessor:
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
-        try:
-            frame = int(val)
-        except ValueError:
-            frame = 0
-        self.update_plot(frame)
-        self.fig.canvas.draw_idle()
+
+        current_time= time.time()
+        
+        if current_time - int(self.last_slider_update) > self.slider_update_interval:
+            self.last_slider_update = current_time
+            try:
+                frame = int(val)
+            except ValueError:
+                frame = 0
+            self.update_plot(frame)
+            self.fig.canvas.draw_idle()
 
     def play_animation(self, event):
         """Start or resume the animation from the current slider value."""
