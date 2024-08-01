@@ -125,7 +125,7 @@ class SimulationProcessor:
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
             print("We  have vacuum frames, where do they occur?")
             print(f"Vacuum start frame is: {self.vacuum_start_frame}\nVacuum end line is: {self.vacuum_end_frame}")
-            if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
+            if self.vacuum_start_frame <= num:
                 vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
                 if vacuum_segment:
                     x_vals, y_vals, z_vals = zip(*vacuum_segment)
