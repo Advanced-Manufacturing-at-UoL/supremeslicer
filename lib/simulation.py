@@ -13,6 +13,7 @@ class SimulationProcessor:
         self.current_frame = 0
         self.vacuum_start_frame = None
         self.vacuum_end_frame = None
+        self.vacuum_coords = []
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -36,6 +37,10 @@ class SimulationProcessor:
             if end_comment in line:
                 end_line = i
                 break
+
+        if start_line is not None and end_line is not None:
+            self.vacuum_start_frame = start_line
+            self.vacuum_end_frame = end_line
 
         return start_line, end_line
 
@@ -117,11 +122,12 @@ class SimulationProcessor:
                 self.lines.append(line)
 
         # Plot the vacuum line if within the range
-        # This logic doesn't work -> Revert to working logic from before?
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+            print("We  have vacuum frames, where do they occur?")
+            print(f"Vacuum start frame is: {self.vacuum_start_frame}\nVacuum end line is: {self.vacuum_end_frame}")
             if self.vacuum_start_frame <= num <= self.vacuum_end_frame:
-                vacuum_segment = self.vacuum_coords_np[:num - self.vacuum_start_frame]
-                if len(vacuum_segment) > 0:
+                vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
+                if vacuum_segment:
                     x_vals, y_vals, z_vals = zip(*vacuum_segment)
                     vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
                     self.lines.append(vacuum_line)
@@ -200,15 +206,18 @@ class SimulationProcessor:
         if num_frames == 0:
             print("No segments found in the G-code. Cannot create animation.")
             return
+        
+        # Parse and store vacuum coordinates
+        vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+        vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+        _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
+        self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
 
         # Set up the plot
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.lines = []
 
-        # Create scatter plot for coordinates
-        #self.scatter = self.ax.scatter(self.coords_np[:, 0], self.coords_np[:, 1], self.coords_np[:, 2], c='b', marker='o')  # Blue for scatter
-        
         self.ax.set_xlim([0, 180])
         self.ax.set_ylim([0, 180])
         self.ax.set_zlim([0, 100])
@@ -221,7 +230,6 @@ class SimulationProcessor:
             for line in self.lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
-            #self.scatter._offsets3d = ([], [], [])
             return self.lines
 
         init()
