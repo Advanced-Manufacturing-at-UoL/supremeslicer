@@ -123,8 +123,6 @@ class SimulationProcessor:
 
         # Plot the vacuum line if within the range
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            print("We  have vacuum frames, where do they occur?")
-            print(f"Vacuum start frame is: {self.vacuum_start_frame}\nVacuum end line is: {self.vacuum_end_frame}")
             if self.vacuum_start_frame <= num:
                 vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
                 if vacuum_segment:
@@ -266,12 +264,8 @@ class SimulationProcessor:
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
         # Parse and store vacuum coordinates
-        print("Finding vacuum g code")
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-        print(f"Start: {vacuum_start_line}\n")
-        print(f"End: {vacuum_end_line}\n")
         if vacuum_start_line is not None and vacuum_end_line is not None:
-            print("Within IF statement")
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
             self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
