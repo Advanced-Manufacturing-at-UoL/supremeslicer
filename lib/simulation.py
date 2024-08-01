@@ -265,17 +265,18 @@ class SimulationProcessor:
 
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
+        # Parse and store vacuum coordinates
+        print("Finding vacuum g code")
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+        print(f"Start: {vacuum_start_line}\n")
+        print(f"End: {vacuum_end_line}\n")
         if vacuum_start_line is not None and vacuum_end_line is not None:
+            print("Within IF statement")
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            vac_coords, = self.parse_gcode(vacuum_gcode)
-            print("Trying to plot the vacuum GCode")
-            if not vac_coords:
-                print("No coordinates found in the vacuum G-code.")
-                return
-            self.plot_toolpath_animation(vac_coords, interval=50)
-        else:
-            print("No vacuum injection G-code found.")
+            _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
+            self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
+
+        self.plot_toolpath_animation(self.vacuum_coords, vacuum_coordinates, interval=50)
 
     def create_line_number_mapping(self, filtered_lines):
         """Create a mapping of original line numbers to their indices in the filtered list."""
