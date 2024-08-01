@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 
+import re
+
+
 class SimulationProcessor:
     def __init__(self, filename):
         """Initialize class"""
@@ -44,41 +47,35 @@ class SimulationProcessor:
 
         return start_line, end_line
 
+
     def parse_gcode(self, gcode):
         """Parse G-code and return lists of extrusion and travel coordinates."""
         e_coordinates = []  # Commands with extrusion
         coordinates = []    # All commands
 
         x, y, z = 0.0, 0.0, 0.0
+        command_pattern = re.compile(r'([G]\d+)')
+        coordinate_pattern = re.compile(r'(X[-\d.]+|Y[-\d.]+|Z[-\d.]+|E[-\d.]+)')
 
         for line_number, line in enumerate(gcode):
             line = line.strip()
             if not line or line.startswith(';'):
                 continue  # ignore comments
 
-            parts = line.split()
-            command = None
-            contains_e = False
+            command_match = command_pattern.search(line)
+            command = command_match.group(1) if command_match else None
 
-            for part in parts:
-                if part.startswith('G'):
-                    command = part
-                elif part.startswith('X'):
-                    try:
-                        x = float(part[1:])
-                    except ValueError:
-                        x = 0.0
-                elif part.startswith('Y'):
-                    try:
-                        y = float(part[1:])
-                    except ValueError:
-                        y = 0.0
-                elif part.startswith('Z'):
-                    try:
-                        z = float(part[1:])
-                    except ValueError:
-                        z = 0.0
-                elif part.startswith('E'):
+            coords = coordinate_pattern.findall(line)
+            contains_e = any(c.startswith('E') for c in coords)
+
+            for coord in coords:
+                if coord.startswith('X'):
+                    x = float(coord[1:])
+                elif coord.startswith('Y'):
+                    y = float(coord[1:])
+                elif coord.startswith('Z'):
+                    z = float(coord[1:])
+                elif coord.startswith('E'):
                     contains_e = True
 
             if command and (command == 'G0' or command == 'G1'):
@@ -87,6 +84,7 @@ class SimulationProcessor:
                     e_coordinates.append((command, x, y, z, line_number))
 
         return e_coordinates, coordinates
+
 
     def split_into_segments(self, coordinates):
         """Split coordinates into individual segments based on extrusion commands."""
