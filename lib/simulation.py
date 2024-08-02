@@ -122,42 +122,48 @@ class SimulationProcessor:
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
-        self.current_frame = num
+        
+        if hasattr(self, 'vacuum_coords_np'):
+            vacuum_lines = self.vacuum_coords_np[:num]
+            self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
+        else:
 
-        # Clear existing lines
-        for line in self.lines:
-            line.remove()
-        self.lines = []
+            self.current_frame = num
 
-        # Plot the segments up to the current frame
-        for segment in self.segments[:num]:
-            if segment:  # Ensure the segment is not empty
-                x_vals, y_vals, z_vals = zip(*segment)
-                line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
-                self.lines.append(line)
+            # Clear existing lines
+            for line in self.lines:
+                line.remove()
+            self.lines = []
 
-        # Plot the travel lines if the flag is set
-        if self.show_travel:
-            travel_lines = self.travel_coords_np[:num]
-            if len(travel_lines) > 0:
-                x_vals, y_vals, z_vals = zip(*travel_lines)
-                travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)  # Green for travel lines
-                self.lines.append(travel_line)
+            # Plot the segments up to the current frame
+            for segment in self.segments[:num]:
+                if segment:  # Ensure the segment is not empty
+                    x_vals, y_vals, z_vals = zip(*segment)
+                    line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
+                    self.lines.append(line)
 
-        # Plot the vacuum line if within the range
-        if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            if self.vacuum_start_frame <= num:
-                vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
-                if vacuum_segment:
-                    x_vals, y_vals, z_vals = zip(*vacuum_segment)
-                    vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)  # Red for vacuum lines
-                    self.lines.append(vacuum_line)
+            # Plot the travel lines if the flag is set
+            if self.show_travel:
+                travel_lines = self.travel_coords_np[:num]
+                if len(travel_lines) > 0:
+                    x_vals, y_vals, z_vals = zip(*travel_lines)
+                    travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)  # Green for travel lines
+                    self.lines.append(travel_line)
 
-        if self.slider.val != num:
-            self.slider.set_val(num)
+            # Plot the vacuum line if within the range
+            if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+                if self.vacuum_start_frame <= num:
+                    vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
+                    if vacuum_segment:
+                        x_vals, y_vals, z_vals = zip(*vacuum_segment)
+                        vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)  # Red for vacuum lines
+                        self.lines.append(vacuum_line)
 
-        self.fig.canvas.draw_idle()
-        return self.lines
+            if self.slider.val != num:
+                self.slider.set_val(num)
+
+            self.fig.canvas.draw_idle()
+            return self.lines
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -283,13 +289,60 @@ class SimulationProcessor:
 
         plt.show()
 
-    def plot_original_toolpath(self):
-        """Plot the original toolpath from the full G-code."""
-        e_coords, travel_coords, coordinates = self.parse_gcode(self.gcode)
-        if not coordinates:
-            print("No coordinates found in the G-code.")
+    def plot_vacuum_animation(self, vacuum_coords, interval):
+        """Animate the vacuum toolpath given a list of (x, y, z) coordinates."""
+        self.vacuum_coords_np = np.array(vacuum_coords)
+        self.segments = [vacuum_coords]  # Treat the entire vacuum path as a single segment
+        num_frames = len(self.segments[0])  # Number of frames is the length of the vacuum path
+        self.interval = interval
+
+        print("within the plot vacuum animation")
+
+        if num_frames == 0:
+            print("No segments found in the vacuum G-code. Cannot create animation.")
             return
-        self.plot_toolpath_animation(e_coords, travel_coords, coordinates, interval=50)
+
+        # Set up the plot
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.lines = []
+
+        self.ax.set_xlim([0, 180])
+        self.ax.set_ylim([0, 180])
+        self.ax.set_zlim([0, 100])
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+        self.ax.set_title('Vacuum G-code Toolpath Simulation')
+
+        def init():
+            for line in self.lines:
+                line.set_data([], [])
+                line.set_3d_properties([])
+            return self.lines
+
+        init()
+
+        # Create playback controls
+        ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
+        ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
+        ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
+        ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
+        ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
+
+        btn_play = Button(ax_play, 'Play')
+        btn_pause = Button(ax_pause, 'Pause')
+        btn_forward = Button(ax_forward, 'Forward')
+        btn_backward = Button(ax_backward, 'Backward')
+        self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+
+        btn_play.on_clicked(self.play_animation)
+        btn_pause.on_clicked(self.pause_animation)
+        btn_forward.on_clicked(self.forward_frame)
+        btn_backward.on_clicked(self.backward_frame)
+        self.slider.on_changed(self.update_slider)
+
+        plt.show()
 
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
@@ -297,10 +350,23 @@ class SimulationProcessor:
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            e_coords, travel_coords, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-            self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
+            _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
 
-        self.plot_toolpath_animation(self.vacuum_coords, travel_coords, vacuum_coordinates, interval=50)
+            # Convert vacuum_coordinates to the expected format for plot_vacuum_animation
+            vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
+            
+            self.plot_vacuum_animation(vacuum_coords, interval=50)
+        else:
+            print("No vacuum G-code found in the file.")
+
+
+    def plot_original_toolpath(self):
+        """Plot the original toolpath from the full G-code."""
+        e_coords, travel_coords, coordinates = self.parse_gcode(self.gcode)
+        if not coordinates:
+            print("No coordinates found in the G-code.")
+            return
+        self.plot_toolpath_animation(e_coords, travel_coords, coordinates, interval=50)
 
     def create_line_number_mapping(self, filtered_lines):
         """Create a mapping of original line numbers to their indices in the filtered list."""
