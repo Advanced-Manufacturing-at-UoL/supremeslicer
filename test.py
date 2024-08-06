@@ -36,9 +36,11 @@ class SimulationProcessor:
         self.ax.set_zlabel('Z')
         self.ax.set_title('G-code Toolpath Simulation')
 
-        # Initialize empty line segments
+        # Initialize line segments
         self.travel_line, = self.ax.plot([], [], [], color='g', lw=0.5) if self.show_travel else (None,)
         self.vacuum_line, = self.ax.plot([], [], [], color='r', lw=0.5)
+        self.line_segments = []  # To store line segments
+        self.tracks = []  # To store plot data for incremental update
 
     def load_config(self):
         """Load configuration from a YAML file."""
@@ -138,22 +140,19 @@ class SimulationProcessor:
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
-        self.current_frame = num
+        if num >= len(self.tracks):
+            return
+        
+        track = self.tracks[num]
+        if track:
+            x_vals, y_vals, z_vals = zip(*track)
+            self.line_segments[num].set_data(x_vals, y_vals)
+            self.line_segments[num].set_3d_properties(z_vals)
 
-        # Update the segments up to the current frame
-        for i, segment in enumerate(self.segments[:num]):
-            if i < len(self.line_segments):
-                if segment:  # Ensure the segment is not empty
-                    x_vals, y_vals, z_vals = zip(*segment)
-                    self.line_segments[i].set_data(x_vals, y_vals)
-                    self.line_segments[i].set_3d_properties(z_vals)
-            else:
-                print(f"Warning: Segment index {i} out of range for line segments.")
-
-        # Update the travel lines if the flag is set
+        # Update travel lines if the flag is set
         if self.show_travel:
-            travel_lines = self.travel_coords_np[:num]
-            if len(travel_lines) > 0:
+            if num < len(self.travel_coords_np):
+                travel_lines = self.travel_coords_np[:num]
                 x_vals, y_vals, z_vals = zip(*travel_lines)
                 self.travel_line.set_data(x_vals, y_vals)
                 self.travel_line.set_3d_properties(z_vals)
@@ -176,18 +175,13 @@ class SimulationProcessor:
         print("\n~~Within create_animation~~")
         print("Creating figure")
 
-        # Adjust line segments based on the number of frames
-        print(f"Total number of frames{frames}")
+        # Initialize line segments for animation
         if len(self.line_segments) < frames:
-            print(f"Line segments {len(self.line_segments)} is smaller than frames {frames} ")
             additional_lines_needed = frames - len(self.line_segments)
-
             for _ in range(additional_lines_needed):
-                print("Inside for loop")
                 line, = self.ax.plot([], [], [], color='b', lw=0.5)
                 self.line_segments.append(line)
 
-        # Use FuncAnimation to handle the animation
         def animate(num):
             print("Animate function called")
             self.update_plot(num)
@@ -196,7 +190,6 @@ class SimulationProcessor:
         print("FuncAnimation called")
         anim = FuncAnimation(self.fig, animate, frames=frames, interval=interval, blit=True)
 
-        # Save the animation using PillowWriter
         print("Saving as gif")
         anim.save('toolpath_animation.gif', writer=PillowWriter(fps=30))
         
@@ -229,14 +222,9 @@ class SimulationProcessor:
             print("No segments found in the G-code. Cannot create animation.")
             return
         
-        # Parse and store vacuum coordinates
-        vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-        vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1] if vacuum_start_line is not None and vacuum_end_line is not None else []
-        _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-        self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
-
-        # Initialize empty lines in the plot
-        self.line_segments = [self.ax.plot([], [], [], color='b', lw=0.5)[0] for _ in self.segments]
+        # Precompute plot data
+        self.tracks = [seg for seg in self.segments]
+        self.vacuum_coords = self.vacuum_coords[:num_frames]
 
         # Create animation
         self.create_animation(num_frames, interval)
@@ -253,6 +241,9 @@ class SimulationProcessor:
         if num_frames == 0:
             print("No segments found in the vacuum G-code. Cannot create animation.")
             return
+
+        # Precompute plot data
+        self.tracks = [vacuum_coords]
 
         # Create animation
         self.create_animation(num_frames, interval)
