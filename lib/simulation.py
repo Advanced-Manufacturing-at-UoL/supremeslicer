@@ -24,41 +24,6 @@ class SimulationProcessor:
         self.last_slider_update = time.time()
         self.slider_update_interval = 0.1
 
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        self.plot_line, = self.ax.plot([], [], [], color='b', lw=0.5)
-
-        self.lines = []  # Initialize lines as an empty list
-        self.e_coords, self.travel_coords, coordinates = self.parse_gcode(self.gcode)
-        self.segments = self.split_into_segments(coordinates)
-
-        self.ax.set_xlim([0, 180])
-        self.ax.set_ylim([0, 180])
-        self.ax.set_zlim([0, 100])
-        self.ax.set_xlabel('X')
-        self.ax.set_ylabel('Y')
-        self.ax.set_zlabel('Z')
-        self.ax.set_title('G-code Toolpath Simulation')
-
-        # Create playback controls
-        ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
-        ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
-        ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
-        ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
-        ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
-
-        self.btn_play = Button(ax_play, 'Play')
-        self.btn_pause = Button(ax_pause, 'Pause')
-        self.btn_forward = Button(ax_forward, 'Forward')
-        self.btn_backward = Button(ax_backward, 'Backward')
-        self.slider = Slider(ax_slider, 'Frame', 0, len(self.segments) - 1, valinit=0, valstep=1)
-
-        self.btn_play.on_clicked(self.play_animation)
-        self.btn_pause.on_clicked(self.pause_animation)
-        self.btn_forward.on_clicked(self.forward_frame)
-        self.btn_backward.on_clicked(self.backward_frame)
-        self.slider.on_changed(self.update_slider)
-
     def load_config(self):
         """Load configuration from a YAML file."""
         try:
@@ -156,25 +121,55 @@ class SimulationProcessor:
         return segments
 
     def update_plot(self, num):
-        """Update the plot with the current segment data."""
-        self.plot_line.set_data([], [])  # Clear previous data
-        self.plot_line.set_3d_properties([])
+        """Update the plot with each new coordinate."""
+        
+        if hasattr(self, 'vacuum_coords_np'):
+            vacuum_lines = self.vacuum_coords_np[:num]
+            self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
+        else:
 
-        if num < len(self.segments):
-            segment = self.segments[num]
-            if segment:  # Ensure the segment is not empty
-                x_vals, y_vals, z_vals = zip(*segment)
-                self.plot_line.set_data(x_vals, y_vals)
-                self.plot_line.set_3d_properties(z_vals)
+            self.current_frame = num
 
-        self.fig.canvas.draw_idle()
-        return self.plot_line
+            # Clear existing lines
+            for line in self.lines:
+                line.remove()
+            self.lines = []
+
+            # Plot the segments up to the current frame
+            for segment in self.segments[:num]:
+                if segment:  # Ensure the segment is not empty
+                    x_vals, y_vals, z_vals = zip(*segment)
+                    line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
+                    self.lines.append(line)
+
+            # Plot the travel lines if the flag is set
+            if self.show_travel:
+                travel_lines = self.travel_coords_np[:num]
+                if len(travel_lines) > 0:
+                    x_vals, y_vals, z_vals = zip(*travel_lines)
+                    travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)  # Green for travel lines
+                    self.lines.append(travel_line)
+
+            # Plot the vacuum line if within the range
+            if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+                if self.vacuum_start_frame <= num:
+                    vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
+                    if vacuum_segment:
+                        x_vals, y_vals, z_vals = zip(*vacuum_segment)
+                        vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)  # Red for vacuum lines
+                        self.lines.append(vacuum_line)
+
+            if self.slider.val != num:
+                self.slider.set_val(num)
+
+            self.fig.canvas.draw_idle()
+            return self.lines
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
         current_time = time.time()
 
-        if current_time - self.last_slider_update > self.slider_update_interval:
+        if current_time - int(self.last_slider_update) > self.slider_update_interval:
             self.last_slider_update = current_time
             try:
                 frame = int(val)
@@ -236,31 +231,61 @@ class SimulationProcessor:
         self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
         self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
+        self.segments = self.split_into_segments(coordinates)
         num_frames = len(self.segments)
         self.interval = interval
 
-        print("Within the plot toolpath animation")
+        print("within the plot toolpath animation")
 
         if num_frames == 0:
             print("No segments found in the G-code. Cannot create animation.")
             return
-
+        
         # Parse and store vacuum coordinates
-        print("Finding gcode lines")
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-        print("parsing gcode to get vacuum coordinates")
         _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-        print("parsed gcode now getting coords")
         self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
-        print("got coords")
 
-        # Update slider with the number of frames
-        self.slider.set_val(0)  # Ensure the initial slider value is 0
-        self.slider.valmax = num_frames - 1
-        self.slider.valinit = 0  # Ensure the initial value is also set correctly
+        # Set up the plot
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.lines = []
 
-        self.update_plot(0)
+        self.ax.set_xlim([0, 180])
+        self.ax.set_ylim([0, 180])
+        self.ax.set_zlim([0, 100])
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+        self.ax.set_title('G-code Toolpath Simulation')
+
+        def init():
+            for line in self.lines:
+                line.set_data([], [])
+                line.set_3d_properties([])
+            return self.lines
+
+        init()
+
+        # Create playback controls
+        ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
+        ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
+        ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
+        ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
+        ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
+
+        btn_play = Button(ax_play, 'Play')
+        btn_pause = Button(ax_pause, 'Pause')
+        btn_forward = Button(ax_forward, 'Forward')
+        btn_backward = Button(ax_backward, 'Backward')
+        self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+
+        btn_play.on_clicked(self.play_animation)
+        btn_pause.on_clicked(self.pause_animation)
+        btn_forward.on_clicked(self.forward_frame)
+        btn_backward.on_clicked(self.backward_frame)
+        self.slider.on_changed(self.update_slider)
 
         plt.show()
 
@@ -277,12 +302,45 @@ class SimulationProcessor:
             print("No segments found in the vacuum G-code. Cannot create animation.")
             return
 
-        # Update slider with the number of frames
-        self.slider.set_val(0)  # Ensure the initial slider value is 0
-        self.slider.valmax = num_frames - 1
-        self.slider.valinit = 0  # Ensure the initial value is also set correctly
+        # Set up the plot
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.lines = []
 
-        self.update_plot(0)
+        self.ax.set_xlim([0, 180])
+        self.ax.set_ylim([0, 180])
+        self.ax.set_zlim([0, 100])
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+        self.ax.set_title('Vacuum G-code Toolpath Simulation')
+
+        def init():
+            for line in self.lines:
+                line.set_data([], [])
+                line.set_3d_properties([])
+            return self.lines
+
+        init()
+
+        # Create playback controls
+        ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
+        ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
+        ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
+        ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
+        ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
+
+        btn_play = Button(ax_play, 'Play')
+        btn_pause = Button(ax_pause, 'Pause')
+        btn_forward = Button(ax_forward, 'Forward')
+        btn_backward = Button(ax_backward, 'Backward')
+        self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+
+        btn_play.on_clicked(self.play_animation)
+        btn_pause.on_clicked(self.pause_animation)
+        btn_forward.on_clicked(self.forward_frame)
+        btn_backward.on_clicked(self.backward_frame)
+        self.slider.on_changed(self.update_slider)
 
         plt.show()
 
@@ -300,6 +358,7 @@ class SimulationProcessor:
             self.plot_vacuum_animation(vacuum_coords, interval=50)
         else:
             print("No vacuum G-code found in the file.")
+
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
