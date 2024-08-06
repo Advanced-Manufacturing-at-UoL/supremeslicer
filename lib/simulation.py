@@ -124,35 +124,48 @@ class SimulationProcessor:
         """Update the plot with each new coordinate."""
         if hasattr(self, 'vacuum_coords_np'):
             vacuum_lines = self.vacuum_coords_np[:num]
-            self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
+            if self.vacuum_line:
+                self.vacuum_line.set_data(vacuum_lines[:, 0], vacuum_lines[:, 1])
+                self.vacuum_line.set_3d_properties(vacuum_lines[:, 2])
+            else:
+                self.vacuum_line, = self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
         else:
-            # Clear existing lines only if necessary
-            if self.current_frame != num:
-                self.current_frame = num
-                self.ax.clear()  # Clear the plot only if necessary
+            # Update the plot lines only if necessary
+            for line in self.lines:
+                line.remove()  # Remove old lines
 
-                # Plot the segments up to the current frame
-                for segment in self.segments[:num]:
-                    if segment:
-                        x_vals, y_vals, z_vals = zip(*segment)
-                        self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
+            self.lines = []
 
-                if self.show_travel:
-                    travel_lines = self.travel_coords_np[:num]
-                    if travel_lines.size:
-                        x_vals, y_vals, z_vals = zip(*travel_lines)
-                        self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
+            # Plot the segments up to the current frame
+            for segment in self.segments[:num]:
+                if segment:
+                    x_vals, y_vals, z_vals = zip(*segment)
+                    line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
+                    self.lines.append(line)
 
-                if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-                    if self.vacuum_start_frame <= num:
-                        vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
-                        if vacuum_segment:
-                            x_vals, y_vals, z_vals = zip(*vacuum_segment)
-                            self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
+            # Plot the travel lines if the flag is set
+            if self.show_travel:
+                travel_lines = self.travel_coords_np[:num]
+                if travel_lines.size:
+                    x_vals, y_vals, z_vals = zip(*travel_lines)
+                    travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
+                    self.lines.append(travel_line)
 
+            # Plot the vacuum line if within the range
+            if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+                if self.vacuum_start_frame <= num:
+                    vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
+                    if vacuum_segment:
+                        x_vals, y_vals, z_vals = zip(*vacuum_segment)
+                        vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
+                        self.lines.append(vacuum_line)
+
+            if self.slider.val != num:
                 self.slider.set_val(num)
-                self.fig.canvas.draw_idle()
-        return []
+
+            self.fig.canvas.draw_idle()
+
+        return self.lines
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
