@@ -2,12 +2,8 @@ import numpy as np
 import re
 import time
 import yaml
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.express as px
-from plotly.subplots import make_subplots
-from plotly.validators.scatter.marker import SymbolValidator
-import plotly.graph_objs as go
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 
 class SimulationProcessor:
     def __init__(self, filename):
@@ -25,6 +21,37 @@ class SimulationProcessor:
 
         self.last_slider_update = time.time()
         self.slider_update_interval = 0.1
+
+        self.line_segments = []  # To store the line segments for animation
+
+        # Initialize the plot
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+
+        self.ax.set_xlim([0, 180])
+        self.ax.set_ylim([0, 180])
+        self.ax.set_zlim([0, 100])
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+        self.ax.set_title('G-code Toolpath Simulation')
+
+        # Initialize empty line segments
+        self.travel_line, = self.ax.plot([], [], [], color='g', lw=0.5) if self.show_travel else (None,)
+        self.vacuum_line, = self.ax.plot([], [], [], color='r', lw=0.5)
+
+        def init():
+            for line in self.line_segments:
+                line.set_data([], [])
+                line.set_3d_properties([])
+            if self.show_travel:
+                self.travel_line.set_data([], [])
+                self.travel_line.set_3d_properties([])
+            self.vacuum_line.set_data([], [])
+            self.vacuum_line.set_3d_properties([])
+            return self.line_segments
+
+        self.init_func = init
 
     def load_config(self):
         """Load configuration from a YAML file."""
@@ -122,68 +149,82 @@ class SimulationProcessor:
 
         return segments
 
-    def update_plot(self, frame):
+    def update_plot(self, num):
         """Update the plot with each new coordinate."""
-        self.current_frame = frame
+        self.current_frame = num
 
-        # Extract the current segments up to the current frame
-        current_segments = self.segments[:frame]
+        # Update the segments up to the current frame
+        for i, segment in enumerate(self.segments[:num]):
+            if i < len(self.line_segments):
+                if segment:  # Ensure the segment is not empty
+                    x_vals, y_vals, z_vals = zip(*segment)
+                    self.line_segments[i].set_data(x_vals, y_vals)
+                    self.line_segments[i].set_3d_properties(z_vals)
+            else:
+                print(f"Warning: Segment index {i} out of range for line segments.")
 
-        traces = []
-
-        # Plot the segments
-        for segment in current_segments:
-            if segment:  # Ensure the segment is not empty
-                x_vals, y_vals, z_vals = zip(*segment)
-                traces.append(go.Scatter3d(x=x_vals, y=y_vals, z=z_vals, mode='lines', line=dict(color='blue', width=2)))
-
-        # Plot the travel lines if the flag is set
+        # Update the travel lines if the flag is set
         if self.show_travel:
-            travel_lines = self.travel_coords_np[:frame]
+            travel_lines = self.travel_coords_np[:num]
             if len(travel_lines) > 0:
                 x_vals, y_vals, z_vals = zip(*travel_lines)
-                traces.append(go.Scatter3d(x=x_vals, y=y_vals, z=z_vals, mode='lines', line=dict(color='green', width=2)))
+                self.travel_line.set_data(x_vals, y_vals)
+                self.travel_line.set_3d_properties(z_vals)
 
-        # Plot the vacuum line if within the range
+        # Update the vacuum line if within the range
         if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            if self.vacuum_start_frame <= frame:
-                vacuum_segment = self.vacuum_coords[:frame - self.vacuum_start_frame]
+            if self.vacuum_start_frame <= num:
+                vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
                 if vacuum_segment:
                     x_vals, y_vals, z_vals = zip(*vacuum_segment)
-                    traces.append(go.Scatter3d(x=x_vals, y=y_vals, z=z_vals, mode='lines', line=dict(color='red', width=2)))
+                    self.vacuum_line.set_data(x_vals, y_vals)
+                    self.vacuum_line.set_3d_properties(z_vals)
 
-        return traces
+        return self.line_segments
 
     def create_animation(self, frames, interval):
+        """Create animation and measure time taken."""
+        start_time = time.time()  # Start timing
+        
         print("\n~~Within create_animation~~")
         print("Creating figure")
-        fig = go.Figure(
-            frames=[go.Frame(data=self.update_plot(frame)) for frame in range(frames)]
-        )
-        print("Updating layout")
-        fig.update_layout(
-            scene=dict(
-                xaxis=dict(range=[0, 180], autorange=False),
-                yaxis=dict(range=[0, 180], autorange=False),
-                zaxis=dict(range=[0, 100], autorange=False),
-                aspectmode='cube'
-            ),
-            updatemenus=[dict(
-                type='buttons',
-                showactive=False,
-                buttons=[
-                    dict(label='Play',
-                         method='animate',
-                         args=[None, dict(frame=dict(duration=interval, redraw=True), fromcurrent=True)]),
-                    dict(label='Pause',
-                         method='animate',
-                         args=[[None], dict(frame=dict(duration=0, redraw=True), mode='immediate', fromcurrent=True)]),
-                ]
-            )]
-        )
-        print("Showing Figure")
-        fig.show()
-        print("Finished showing figure")
+
+        # Adjust line segments based on the number of frames
+        if len(self.line_segments) < frames:
+            additional_lines_needed = frames - len(self.line_segments)
+            for _ in range(additional_lines_needed):
+                line, = self.ax.plot([], [], [], color='b', lw=0.5)
+                self.line_segments.append(line)
+
+        # Pre-generate the frames
+        frames_data = []
+        for num in range(frames):
+            self.update_plot(num)  # Update plot data
+            self.fig.canvas.draw()
+            img = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
+            img = img.reshape(self.fig.canvas.get_width_height()[::-1] + (3,))
+            frames_data.append(img)
+        
+        # Save the animation using the pre-generated frames
+        writer = PillowWriter(fps=30)
+        self.anim = FuncAnimation(self.fig, lambda x: x, frames=frames_data, interval=interval, blit=True)
+        self.anim.save('toolpath_animation.gif', writer=writer)
+        
+        end_time = time.time()  # End timing
+        print("Animation created")
+        print(f"Time taken to create the animation: {end_time - start_time:.2f} seconds")
+
+    def save_animation(self, filename, format='gif'):
+        """Save the animation to a file."""
+        if format == 'gif':
+            writer = PillowWriter(fps=30)
+        elif format == 'mp4':
+            writer = FFMpegWriter(fps=30)
+        else:
+            raise ValueError("Unsupported format. Use 'gif' or 'mp4'.")
+
+        self.anim.save(filename, writer=writer)
+        print(f"Animation saved as {filename}")
 
     def plot_toolpath_animation(self, e_coords_list, travel_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
@@ -194,23 +235,20 @@ class SimulationProcessor:
         num_frames = len(self.segments)
         self.interval = interval
 
-        print("within the plot toolpath animation")
-
         if num_frames == 0:
             print("No segments found in the G-code. Cannot create animation.")
             return
         
         # Parse and store vacuum coordinates
-        print("finding vacuum Gcode Lines")
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-
-        print("parsing vacuum gcode")
         _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
         self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
 
-        # Create and show animation
-        print("creating animation")
+        # Initialize empty lines in the plot
+        self.init_func()
+
+        # Create animation
         self.create_animation(num_frames, interval)
 
     def plot_vacuum_animation(self, vacuum_coords, interval):
@@ -226,7 +264,7 @@ class SimulationProcessor:
             print("No segments found in the vacuum G-code. Cannot create animation.")
             return
 
-        # Create and show animation
+        # Create animation
         self.create_animation(num_frames, interval)
 
     def plot_vacuum_toolpath(self):
@@ -245,12 +283,18 @@ class SimulationProcessor:
 
 def main():
     """Main function to create and show the G-code simulation."""
-    filename = r'output\benchy.gcode'
+    filename = r'output/benchy.gcode'
     simulation_processor = SimulationProcessor(filename)
 
+    print("Obtaining coordinates in main")
     e_coords_list, travel_coords_list, coordinates = simulation_processor.parse_gcode(simulation_processor.gcode)
+    print("Obtaining simulation in main")
     simulation_processor.plot_toolpath_animation(e_coords_list, travel_coords_list, coordinates, interval=10)
-    simulation_processor.plot_vacuum_toolpath()
+    print("Saving as GIF")
+    simulation_processor.save_animation('toolpath_animation.gif', format='gif')
+    print("Saving as MP4")
+    simulation_processor.save_animation('toolpath_animation.mp4', format='mp4')
+    print("finished")
 
 if __name__ == "__main__":
     main()
