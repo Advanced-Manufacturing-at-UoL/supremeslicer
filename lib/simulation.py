@@ -124,32 +124,40 @@ class SimulationProcessor:
         """Update the plot with each new coordinate."""
         if hasattr(self, 'vacuum_coords_np'):
             vacuum_lines = self.vacuum_coords_np[:num]
-            if self.vacuum_line:
+            if hasattr(self, 'vacuum_line') and self.vacuum_line:
                 self.vacuum_line.set_data(vacuum_lines[:, 0], vacuum_lines[:, 1])
                 self.vacuum_line.set_3d_properties(vacuum_lines[:, 2])
             else:
                 self.vacuum_line, = self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
+
         else:
             # Update the plot lines only if necessary
             for line in self.lines:
-                line.remove()  # Remove old lines
-
-            self.lines = []
+                line.set_data([], [])
+                line.set_3d_properties([])
 
             # Plot the segments up to the current frame
-            for segment in self.segments[:num]:
+            for i, segment in enumerate(self.segments[:num]):
                 if segment:
                     x_vals, y_vals, z_vals = zip(*segment)
-                    line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
-                    self.lines.append(line)
+                    if i < len(self.lines):
+                        line = self.lines[i]
+                        line.set_data(x_vals, y_vals)
+                        line.set_3d_properties(z_vals)
+                    else:
+                        line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
+                        self.lines.append(line)
 
             # Plot the travel lines if the flag is set
             if self.show_travel:
-                travel_lines = self.travel_coords_np[:num]
-                if travel_lines.size:
-                    x_vals, y_vals, z_vals = zip(*travel_lines)
-                    travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
-                    self.lines.append(travel_line)
+                if hasattr(self, 'travel_line') and self.travel_line:
+                    self.travel_line.set_data(self.travel_coords_np[:num, 0], self.travel_coords_np[:num, 1])
+                    self.travel_line.set_3d_properties(self.travel_coords_np[:num, 2])
+                else:
+                    travel_lines = self.travel_coords_np[:num]
+                    if travel_lines.size:
+                        x_vals, y_vals, z_vals = zip(*travel_lines)
+                        self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
 
             # Plot the vacuum line if within the range
             if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
@@ -157,14 +165,16 @@ class SimulationProcessor:
                     vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
                     if vacuum_segment:
                         x_vals, y_vals, z_vals = zip(*vacuum_segment)
-                        vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
-                        self.lines.append(vacuum_line)
+                        if hasattr(self, 'vacuum_line') and self.vacuum_line:
+                            self.vacuum_line.set_data(x_vals, y_vals)
+                            self.vacuum_line.set_3d_properties(z_vals)
+                        else:
+                            self.vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
 
             if self.slider.val != num:
                 self.slider.set_val(num)
 
             self.fig.canvas.draw_idle()
-
         return self.lines
 
     def update_slider(self, val):
