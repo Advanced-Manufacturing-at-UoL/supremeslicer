@@ -3,7 +3,7 @@ import re
 import time
 import yaml
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
+from matplotlib.animation import FuncAnimation, PillowWriter
 
 class SimulationProcessor:
     def __init__(self, filename):
@@ -39,19 +39,6 @@ class SimulationProcessor:
         # Initialize empty line segments
         self.travel_line, = self.ax.plot([], [], [], color='g', lw=0.5) if self.show_travel else (None,)
         self.vacuum_line, = self.ax.plot([], [], [], color='r', lw=0.5)
-
-        def init():
-            for line in self.line_segments:
-                line.set_data([], [])
-                line.set_3d_properties([])
-            if self.show_travel:
-                self.travel_line.set_data([], [])
-                self.travel_line.set_3d_properties([])
-            self.vacuum_line.set_data([], [])
-            self.vacuum_line.set_3d_properties([])
-            return self.line_segments
-
-        self.init_func = init
 
     def load_config(self):
         """Load configuration from a YAML file."""
@@ -190,25 +177,28 @@ class SimulationProcessor:
         print("Creating figure")
 
         # Adjust line segments based on the number of frames
+        print(f"Total number of frames{frames}")
         if len(self.line_segments) < frames:
+            print(f"Line segments {len(self.line_segments)} is smaller than frames {frames} ")
             additional_lines_needed = frames - len(self.line_segments)
+
             for _ in range(additional_lines_needed):
+                print("Inside for loop")
                 line, = self.ax.plot([], [], [], color='b', lw=0.5)
                 self.line_segments.append(line)
 
-        # Pre-generate the frames
-        frames_data = []
-        for num in range(frames):
-            self.update_plot(num)  # Update plot data
-            self.fig.canvas.draw()
-            img = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
-            img = img.reshape(self.fig.canvas.get_width_height()[::-1] + (3,))
-            frames_data.append(img)
-        
-        # Save the animation using the pre-generated frames
-        writer = PillowWriter(fps=30)
-        self.anim = FuncAnimation(self.fig, lambda x: x, frames=frames_data, interval=interval, blit=True)
-        self.anim.save('toolpath_animation.gif', writer=writer)
+        # Use FuncAnimation to handle the animation
+        def animate(num):
+            print("Animate function called")
+            self.update_plot(num)
+            return self.line_segments + ([self.travel_line] if self.show_travel else []) + [self.vacuum_line]
+
+        print("FuncAnimation called")
+        anim = FuncAnimation(self.fig, animate, frames=frames, interval=interval, blit=True)
+
+        # Save the animation using PillowWriter
+        print("Saving as gif")
+        anim.save('toolpath_animation.gif', writer=PillowWriter(fps=30))
         
         end_time = time.time()  # End timing
         print("Animation created")
@@ -241,12 +231,12 @@ class SimulationProcessor:
         
         # Parse and store vacuum coordinates
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-        vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+        vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1] if vacuum_start_line is not None and vacuum_end_line is not None else []
         _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
         self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
 
         # Initialize empty lines in the plot
-        self.init_func()
+        self.line_segments = [self.ax.plot([], [], [], color='b', lw=0.5)[0] for _ in self.segments]
 
         # Create animation
         self.create_animation(num_frames, interval)
@@ -294,7 +284,6 @@ def main():
     simulation_processor.save_animation('toolpath_animation.gif', format='gif')
     print("Saving as MP4")
     simulation_processor.save_animation('toolpath_animation.mp4', format='mp4')
-    print("finished")
 
 if __name__ == "__main__":
     main()
