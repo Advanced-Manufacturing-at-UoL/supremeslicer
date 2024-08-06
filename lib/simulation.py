@@ -122,48 +122,37 @@ class SimulationProcessor:
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
-        
         if hasattr(self, 'vacuum_coords_np'):
             vacuum_lines = self.vacuum_coords_np[:num]
             self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
         else:
+            # Clear existing lines only if necessary
+            if self.current_frame != num:
+                self.current_frame = num
+                self.ax.clear()  # Clear the plot only if necessary
 
-            self.current_frame = num
+                # Plot the segments up to the current frame
+                for segment in self.segments[:num]:
+                    if segment:
+                        x_vals, y_vals, z_vals = zip(*segment)
+                        self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
 
-            # Clear existing lines
-            for line in self.lines:
-                line.remove()
-            self.lines = []
+                if self.show_travel:
+                    travel_lines = self.travel_coords_np[:num]
+                    if travel_lines.size:
+                        x_vals, y_vals, z_vals = zip(*travel_lines)
+                        self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
 
-            # Plot the segments up to the current frame
-            for segment in self.segments[:num]:
-                if segment:  # Ensure the segment is not empty
-                    x_vals, y_vals, z_vals = zip(*segment)
-                    line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
-                    self.lines.append(line)
+                if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
+                    if self.vacuum_start_frame <= num:
+                        vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
+                        if vacuum_segment:
+                            x_vals, y_vals, z_vals = zip(*vacuum_segment)
+                            self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
 
-            # Plot the travel lines if the flag is set
-            if self.show_travel:
-                travel_lines = self.travel_coords_np[:num]
-                if len(travel_lines) > 0:
-                    x_vals, y_vals, z_vals = zip(*travel_lines)
-                    travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)  # Green for travel lines
-                    self.lines.append(travel_line)
-
-            # Plot the vacuum line if within the range
-            if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-                if self.vacuum_start_frame <= num:
-                    vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
-                    if vacuum_segment:
-                        x_vals, y_vals, z_vals = zip(*vacuum_segment)
-                        vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)  # Red for vacuum lines
-                        self.lines.append(vacuum_line)
-
-            if self.slider.val != num:
                 self.slider.set_val(num)
-
-            self.fig.canvas.draw_idle()
-            return self.lines
+                self.fig.canvas.draw_idle()
+        return []
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -259,15 +248,15 @@ class SimulationProcessor:
         self.ax.set_ylabel('Y')
         self.ax.set_zlabel('Z')
         self.ax.set_title('G-code Toolpath Simulation')
-
+        """
         def init():
             for line in self.lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
             return self.lines
 
-        init()
-
+        # init()
+        """
         # Create playback controls
         ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
         ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
