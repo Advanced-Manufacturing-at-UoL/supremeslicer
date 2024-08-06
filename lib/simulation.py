@@ -27,6 +27,8 @@ class SimulationProcessor:
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.lines = []  # Initialize lines as an empty list
+        self.e_coords, self.travel_coords, coordinates = self.parse_gcode(self.gcode)
+        self.segments = self.split_into_segments(coordinates)
 
         self.ax.set_xlim([0, 180])
         self.ax.set_ylim([0, 180])
@@ -47,7 +49,8 @@ class SimulationProcessor:
         self.btn_pause = Button(ax_pause, 'Pause')
         self.btn_forward = Button(ax_forward, 'Forward')
         self.btn_backward = Button(ax_backward, 'Backward')
-        self.slider = Slider(ax_slider, 'Frame', 0, 0, valinit=0, valstep=1)
+        self.slider = Slider(ax_slider, 'Frame', 0, len(self.segments) -1, valinit=0, valstep=1)
+        #Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
 
         self.btn_play.on_clicked(self.play_animation)
         self.btn_pause.on_clicked(self.pause_animation)
@@ -269,7 +272,6 @@ class SimulationProcessor:
         self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
         self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
         self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
-        self.segments = self.split_into_segments(coordinates)
         num_frames = len(self.segments)
         self.interval = interval
 
@@ -289,8 +291,11 @@ class SimulationProcessor:
         self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
         print("got coords")
 
+        # Update slider with the number of frames
+        self.slider.set_val(0)  # Ensure the initial slider value is 0
         self.slider.valmax = num_frames - 1
-        self.slider.set_val(0)
+        self.slider.valinit = 0  # Ensure the initial value is also set correctly
+
         self.update_plot(0)
 
         plt.show()
@@ -308,8 +313,11 @@ class SimulationProcessor:
             print("No segments found in the vacuum G-code. Cannot create animation.")
             return
 
+        # Update slider with the number of frames
+        self.slider.set_val(0)  # Ensure the initial slider value is 0
         self.slider.valmax = num_frames - 1
-        self.slider.set_val(0)
+        self.slider.valinit = 0  # Ensure the initial value is also set correctly
+
         self.update_plot(0)
 
         plt.show()
