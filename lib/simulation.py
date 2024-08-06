@@ -26,6 +26,8 @@ class SimulationProcessor:
 
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
+        self.plot_line, = self.ax.plot([], [], [], color='b', lw=0.5)
+
         self.lines = []  # Initialize lines as an empty list
         self.e_coords, self.travel_coords, coordinates = self.parse_gcode(self.gcode)
         self.segments = self.split_into_segments(coordinates)
@@ -49,8 +51,7 @@ class SimulationProcessor:
         self.btn_pause = Button(ax_pause, 'Pause')
         self.btn_forward = Button(ax_forward, 'Forward')
         self.btn_backward = Button(ax_backward, 'Backward')
-        self.slider = Slider(ax_slider, 'Frame', 0, len(self.segments) -1, valinit=0, valstep=1)
-        #Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+        self.slider = Slider(ax_slider, 'Frame', 0, len(self.segments) - 1, valinit=0, valstep=1)
 
         self.btn_play.on_clicked(self.play_animation)
         self.btn_pause.on_clicked(self.pause_animation)
@@ -155,62 +156,25 @@ class SimulationProcessor:
         return segments
 
     def update_plot(self, num):
-        """Update the plot with each new coordinate."""
-        # Initialize the set of plotted segments if it doesn't exist
-        if not hasattr(self, 'plotted_segments'):
-            self.plotted_segments = set()
+        """Update the plot with the current segment data."""
+        self.plot_line.set_data([], [])  # Clear previous data
+        self.plot_line.set_3d_properties([])
 
-        # Plot the segments up to the current frame
-        for i, segment in enumerate(self.segments[:num]):
-            if i in self.plotted_segments:
-                continue  # Skip segments that have already been plotted
-
+        if num < len(self.segments):
+            segment = self.segments[num]
             if segment:  # Ensure the segment is not empty
                 x_vals, y_vals, z_vals = zip(*segment)
-                if i >= len(self.lines):
-                    line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
-                    self.lines.append(line)
-                else:
-                    self.lines[i].set_data(x_vals, y_vals)
-                    self.lines[i].set_3d_properties(z_vals)
-                self.plotted_segments.add(i)  # Mark this segment as plotted
-
-        # Plot the travel lines if the flag is set
-        if self.show_travel:
-            travel_lines = self.travel_coords_np[:num]
-            if len(travel_lines) > 0:
-                x_vals, y_vals, z_vals = zip(*travel_lines)
-                if len(self.lines) <= len(self.segments):
-                    travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)  # Green for travel lines
-                    self.lines.append(travel_line)
-                else:
-                    self.lines[len(self.segments)].set_data(x_vals, y_vals)
-                    self.lines[len(self.segments)].set_3d_properties(z_vals)
-
-        # Plot the vacuum line if within the range
-        if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-            if self.vacuum_start_frame <= num:
-                vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
-                if vacuum_segment:
-                    x_vals, y_vals, z_vals = zip(*vacuum_segment)
-                    if len(self.lines) <= len(self.segments) + 1:
-                        vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)  # Red for vacuum lines
-                        self.lines.append(vacuum_line)
-                    else:
-                        self.lines[len(self.segments) + 1].set_data(x_vals, y_vals)
-                        self.lines[len(self.segments) + 1].set_3d_properties(z_vals)
-
-        if self.slider.val != num:
-            self.slider.set_val(num)
+                self.plot_line.set_data(x_vals, y_vals)
+                self.plot_line.set_3d_properties(z_vals)
 
         self.fig.canvas.draw_idle()
-        return self.lines
+        return self.plot_line
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
         current_time = time.time()
 
-        if current_time - int(self.last_slider_update) > self.slider_update_interval:
+        if current_time - self.last_slider_update > self.slider_update_interval:
             self.last_slider_update = current_time
             try:
                 frame = int(val)
@@ -280,7 +244,7 @@ class SimulationProcessor:
         if num_frames == 0:
             print("No segments found in the G-code. Cannot create animation.")
             return
-        
+
         # Parse and store vacuum coordinates
         print("Finding gcode lines")
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
