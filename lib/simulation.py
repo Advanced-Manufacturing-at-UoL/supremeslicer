@@ -121,13 +121,17 @@ class SimulationProcessor:
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
+        artists = []
+
         if hasattr(self, 'vacuum_coords_np'):
             vacuum_lines = self.vacuum_coords_np[:num]
             if hasattr(self, 'vacuum_line') and self.vacuum_line:
                 self.vacuum_line.set_data(vacuum_lines[:, 0], vacuum_lines[:, 1])
                 self.vacuum_line.set_3d_properties(vacuum_lines[:, 2])
+                artists.append(self.vacuum_line)
             else:
                 self.vacuum_line, = self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
+                artists.append(self.vacuum_line)
 
         else:
             if not hasattr(self, 'lines'):
@@ -136,6 +140,7 @@ class SimulationProcessor:
             for line in self.lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
+                artists.append(line)
 
             for i, segment in enumerate(self.segments[:num]):
                 if segment:
@@ -144,19 +149,23 @@ class SimulationProcessor:
                         line = self.lines[i]
                         line.set_data(x_vals, y_vals)
                         line.set_3d_properties(z_vals)
+                        artists.append(line)
                     else:
                         line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
                         self.lines.append(line)
+                        artists.append(line)
 
             if self.show_travel:
                 if hasattr(self, 'travel_line') and self.travel_line:
                     self.travel_line.set_data(self.travel_coords_np[:num, 0], self.travel_coords_np[:num, 1])
                     self.travel_line.set_3d_properties(self.travel_coords_np[:num, 2])
+                    artists.append(self.travel_line)
                 else:
                     travel_lines = self.travel_coords_np[:num]
                     if travel_lines.size:
                         x_vals, y_vals, z_vals = zip(*travel_lines)
                         self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
+                        artists.append(self.travel_line)
 
             if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
                 if self.vacuum_start_frame <= num:
@@ -166,15 +175,13 @@ class SimulationProcessor:
                         if hasattr(self, 'vacuum_line') and self.vacuum_line:
                             self.vacuum_line.set_data(x_vals, y_vals)
                             self.vacuum_line.set_3d_properties(z_vals)
+                            artists.append(self.vacuum_line)
                         else:
                             self.vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
+                            artists.append(self.vacuum_line)
 
-            if self.slider.val != num:
-                self.slider.set_val(num)
-
-            self.fig.canvas.draw_idle()
-
-        return self.lines
+        self.fig.canvas.draw_idle()
+        return artists
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -201,7 +208,7 @@ class SimulationProcessor:
                 self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
                 self.fig, self.update_plot, frames=range(self.current_frame, len(self.segments)),
-                interval=self.interval, blit=False, repeat=False
+                interval=self.interval, blit=True, repeat=False
             )
             self.fig.canvas.draw_idle()
         else:
