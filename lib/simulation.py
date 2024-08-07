@@ -239,12 +239,37 @@ class SimulationProcessor:
 
     def plot_toolpath_animation(self, e_coords_list, travel_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
-        self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
-        self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
-        self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
+        
+        common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
+        travel_coords = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
+        coords = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
+        
+        print("About to filter all coordiantes within plot_toolpath_animation\n")
+        filtered_e_coords = filter_close_coordinates(common_e_coords_np)
+        print(f"Filtered e coordinates with length {len(filtered_e_coords)} and type {type(filtered_e_coords)}")
+
+        filtered_travel_coords = filter_close_coordinates(travel_coords)
+        print(f"Filtered travel coordinates with length {len(filtered_travel_coords)} and type {type(filtered_travel_coords)}")
+
+        filtered_coords = filter_close_coordinates(coords)
+        print(f"Filtered coordinates with length {len(filtered_coords)} and type {type(filtered_coords)}")
+
+        self.common_e_coords_np = np.array(filtered_e_coords)
+        self.travel_coords_np = np.array(filtered_travel_coords)
+        self.coords_np = np.array(filtered_coords)
         self.segments = self.split_into_segments(coordinates)
         num_frames = len(self.segments)
         self.interval = interval
+
+        # self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
+        # self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
+        # self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
+
+        # self.segments = self.split_into_segments(coordinates)
+        # num_frames = len(self.segments)
+        # self.interval = interval
+
+        
 
         if num_frames == 0:
             print("No segments found in the G-code. Cannot create animation.")
@@ -254,7 +279,8 @@ class SimulationProcessor:
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
         _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-        self.vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
+        vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
+        self.filtered_vacuum_coords = filter_close_coordinates(vacuum_coords)
 
         # Set up the plot
         self.fig = plt.figure()
@@ -399,3 +425,30 @@ class SimulationProcessor:
             print(f"X: {frame[0]}, Y: {frame[1]}, Z: {frame[2]}")
 
         return vacuum_coords_frames
+
+def filter_close_coordinates(coords_np, threshold=0.1):
+    """Filter out coordinates that are too close to each other based on the threshold."""
+    if coords_np.size == 0:
+        return coords_np
+    print(f"You have input coordinates of length {len(coords_np)}")
+    print(f"You have input coordinates of type {type(coords_np)}")
+
+    # Ensure the array is of type float for distance calculations
+    coords_np = coords_np.astype(float)
+    print(f"You have input coordinates of type {type(coords_np)}")
+
+    # Initialize the list of filtered coordinates
+    filtered_coords = [coords_np[0]]
+    print(f"initialised filtered coords list as {filtered_coords} with size {len(filtered_coords)} and type {type(filtered_coords)}\n")
+    print("About to start for loop")
+
+    for coord in coords_np[1:]:
+        # Calculate Euclidean distance from the last filtered coordinate
+        last_filtered_coord = filtered_coords[-1]
+        distance = np.linalg.norm(coord - last_filtered_coord)
+        if distance > threshold:
+            filtered_coords.append(coord)
+    print(f"Returning length of final set of filtered_coords {len(filtered_coords)}")
+    print(len(filtered_coords))
+    filtered_coords_np = np.array(filtered_coords)
+    return np.array(filtered_coords_np)
