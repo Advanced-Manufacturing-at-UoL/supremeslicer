@@ -9,6 +9,9 @@ machine with custom tools.
 
 Written by Pralish Satyal
 el19ps@leeds.ac.uk
+P.Satyal@leeds.ac.uk
+
+pralishbusiness@gmail.com
 """
 
 # Import Main Engine Class to run the process thread
