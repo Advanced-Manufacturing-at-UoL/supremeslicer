@@ -150,7 +150,7 @@ class SimulationProcessor:
             for line in self.lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
-
+            print(self.segments[:num])
             for i, segment in enumerate(self.segments[:num]):
                 if segment:
                     x_vals, y_vals, z_vals = zip(*segment)
@@ -267,9 +267,9 @@ class SimulationProcessor:
         self.travel_coords_np = filtered_travel_coords
         self.coords_np = filtered_coords
 
-        self.segments = [self.split_into_segments_new(self.coords_np)]
+        self.segments = self.split_into_segments_new(self.coords_np)
+        print(self.segments)
         print(f"The length of segments with the new approach is {len(self.segments)}")
-        #self.segments = self.split_into_segments(coordinates) # THIS IS WHAT WE WANT TO CHANGE
         num_frames = len(self.segments)
         self.interval = interval
 
