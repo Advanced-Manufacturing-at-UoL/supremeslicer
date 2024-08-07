@@ -29,8 +29,7 @@ class SimulationProcessor:
             with open(self.config_file, 'r') as f:
                 return yaml.safe_load(f)
         except FileNotFoundError:
-            print(f"Error: Configuration file {self.config_file} not found.")
-            return {}
+            raise(f"Error: Configuration file {self.config_file} not found.")
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -38,8 +37,7 @@ class SimulationProcessor:
             with open(self.filename, 'r') as f:
                 return f.readlines()
         except FileNotFoundError:
-            print(f"Error: File {self.filename} not found.")
-            return []
+            raise(f"Error: File {self.filename} not found.")
 
     def find_vacuum_gcode_lines(self):
         """Find the start and end lines of the vacuum G-code."""
@@ -83,14 +81,17 @@ class SimulationProcessor:
             contains_e = any(c.startswith('E') for c in coords)
 
             for coord in coords:
-                if coord.startswith('X'):
-                    x = float(coord[1:])
-                elif coord.startswith('Y'):
-                    y = float(coord[1:])
-                elif coord.startswith('Z'):
-                    z = float(coord[1:])
-                elif coord.startswith('E'):
-                    contains_e = True
+                try:
+                    if coord.startswith('X'):
+                        x = float(coord[1:])
+                    elif coord.startswith('Y'):
+                        y = float(coord[1:])
+                    elif coord.startswith('Z'):
+                        z = float(coord[1:])
+                    elif coord.startswith('E'):
+                        contains_e = True
+                except ValueError:
+                    print(f"Error parsing coordinate: {coord}")
 
             if command and (command == 'G0' or command == 'G1'):
                 if contains_e:
@@ -127,14 +128,15 @@ class SimulationProcessor:
                 self.vacuum_line.set_3d_properties(vacuum_lines[:, 2])
             else:
                 self.vacuum_line, = self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
-        else:
 
-            # Update the plot lines only if necessary
+        else:
+            if not hasattr(self, 'lines'):
+                self.lines = []
+
             for line in self.lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
 
-            # Plot the segments up to the current frame
             for i, segment in enumerate(self.segments[:num]):
                 if segment:
                     x_vals, y_vals, z_vals = zip(*segment)
@@ -146,7 +148,6 @@ class SimulationProcessor:
                         line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
                         self.lines.append(line)
 
-            # Plot the travel lines if the flag is set
             if self.show_travel:
                 if hasattr(self, 'travel_line') and self.travel_line:
                     self.travel_line.set_data(self.travel_coords_np[:num, 0], self.travel_coords_np[:num, 1])
@@ -157,7 +158,6 @@ class SimulationProcessor:
                         x_vals, y_vals, z_vals = zip(*travel_lines)
                         self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
 
-            # Plot the vacuum line if within the range
             if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
                 if self.vacuum_start_frame <= num:
                     vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
@@ -173,6 +173,7 @@ class SimulationProcessor:
                 self.slider.set_val(num)
 
             self.fig.canvas.draw_idle()
+
         return self.lines
 
     def update_slider(self, val):
@@ -398,11 +399,3 @@ class SimulationProcessor:
             print(f"X: {frame[0]}, Y: {frame[1]}, Z: {frame[2]}")
 
         return vacuum_coords_frames
-
-    def find_index_in_original_line_numbers(self, original_line_numbers, target_line_number):
-        """Find the index of the target line number in the list of original line numbers."""
-        try:
-            return original_line_numbers.index(target_line_number)
-        except ValueError:
-            print(f"Line number {target_line_number} not found in the original line numbers.")
-            return None
