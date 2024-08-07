@@ -359,10 +359,10 @@ class SimulationProcessor:
         line_number_to_index = {}
         current_line_number = 0
 
-        for line in filtered_lines:
+        for idx, line in enumerate(filtered_lines):
             if line.strip() and not line.strip().startswith(';'):
                 current_line_number += 1
-                line_number_to_index[current_line_number] = len(line_number_to_index)
+                line_number_to_index[current_line_number] = idx
 
         return line_number_to_index
 
