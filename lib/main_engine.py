@@ -154,7 +154,6 @@ class MainEngine:
                 self._run_simulation()
             elif user_in == 5:
                 print("Exiting SupremeSlicer\n")
-                #Utils.sleep(2)
                 Utils.exit_on('Thank you\n')
             else:
                 print("Invalid option chosen!")

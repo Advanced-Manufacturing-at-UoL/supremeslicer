@@ -20,7 +20,6 @@ class SimulationProcessor:
         self.vacuum_end_frame = None
         self.vacuum_coords = []
         self.show_travel = self.config.get('show_travel', 0)  # Flag from YAML configuration
-
         self.last_slider_update = time.time()
         self.slider_update_interval = 0.1
 
@@ -66,7 +65,7 @@ class SimulationProcessor:
         """Parse G-code and return lists of extrusion and travel coordinates."""
         e_coordinates = []  # Commands with extrusion
         coordinates = []    # All commands
-        travel_coordinates = []  # Just the travel commands
+        travel_coordinates = [] # Just the travel commands
 
         x, y, z = 0.0, 0.0, 0.0
         command_pattern = re.compile(r'([G]\d+)')
@@ -75,7 +74,7 @@ class SimulationProcessor:
         for line_number, line in enumerate(gcode):
             line = line.strip()
             if not line or line.startswith(';'):
-                continue  # ignore comments
+                continue  # Ignore comments
 
             command_match = command_pattern.search(line)
             command = command_match.group(1) if command_match else None
@@ -98,7 +97,6 @@ class SimulationProcessor:
                     e_coordinates.append((command, x, y, z, line_number))
                 else:
                     travel_coordinates.append((command, x, y, z, line_number))
-
                 coordinates.append((command, x, y, z, contains_e, line_number))
 
         return e_coordinates, travel_coordinates, coordinates
@@ -129,8 +127,8 @@ class SimulationProcessor:
                 self.vacuum_line.set_3d_properties(vacuum_lines[:, 2])
             else:
                 self.vacuum_line, = self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
-
         else:
+
             # Update the plot lines only if necessary
             for line in self.lines:
                 line.set_data([], [])
@@ -247,12 +245,10 @@ class SimulationProcessor:
         num_frames = len(self.segments)
         self.interval = interval
 
-        print("within the plot toolpath animation")
-
         if num_frames == 0:
             print("No segments found in the G-code. Cannot create animation.")
             return
-        
+
         # Parse and store vacuum coordinates
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
@@ -263,7 +259,6 @@ class SimulationProcessor:
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.lines = []
-
         self.ax.set_xlim([0, 180])
         self.ax.set_ylim([0, 180])
         self.ax.set_zlim([0, 100])
@@ -271,15 +266,7 @@ class SimulationProcessor:
         self.ax.set_ylabel('Y')
         self.ax.set_zlabel('Z')
         self.ax.set_title('G-code Toolpath Simulation')
-        """
-        def init():
-            for line in self.lines:
-                line.set_data([], [])
-                line.set_3d_properties([])
-            return self.lines
-
-        # init()
-        """
+        
         # Create playback controls
         ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
         ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
@@ -308,8 +295,6 @@ class SimulationProcessor:
         num_frames = len(self.segments[0])  # Number of frames is the length of the vacuum path
         self.interval = interval
 
-        print("within the plot vacuum animation")
-
         if num_frames == 0:
             print("No segments found in the vacuum G-code. Cannot create animation.")
             return
@@ -318,7 +303,6 @@ class SimulationProcessor:
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.lines = []
-
         self.ax.set_xlim([0, 180])
         self.ax.set_ylim([0, 180])
         self.ax.set_zlim([0, 100])
@@ -326,14 +310,6 @@ class SimulationProcessor:
         self.ax.set_ylabel('Y')
         self.ax.set_zlabel('Z')
         self.ax.set_title('Vacuum G-code Toolpath Simulation')
-
-        def init():
-            for line in self.lines:
-                line.set_data([], [])
-                line.set_3d_properties([])
-            return self.lines
-
-        init()
 
         # Create playback controls
         ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
@@ -358,26 +334,24 @@ class SimulationProcessor:
 
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
-        # Parse and store vacuum coordinates
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+
         if vacuum_start_line is not None and vacuum_end_line is not None:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-
-            # Convert vacuum_coordinates to the expected format for plot_vacuum_animation
             vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
-            
             self.plot_vacuum_animation(vacuum_coords, interval=50)
         else:
             print("No vacuum G-code found in the file.")
 
-
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
         e_coords, travel_coords, coordinates = self.parse_gcode(self.gcode)
+
         if not coordinates:
             print("No coordinates found in the G-code.")
             return
+
         self.plot_toolpath_animation(e_coords, travel_coords, coordinates, interval=50)
 
     def create_line_number_mapping(self, filtered_lines):
@@ -389,12 +363,11 @@ class SimulationProcessor:
             if line.strip() and not line.strip().startswith(';'):
                 current_line_number += 1
                 line_number_to_index[current_line_number] = len(line_number_to_index)
-        
+
         return line_number_to_index
 
     def get_vacuum_coordinates(self):
         """Find and print the coordinates corresponding to the vacuum PnP toolpath."""
-        # Filtered G-code lines and create mapping
         filtered_lines = [line.strip() for line in self.gcode if line.strip() and not line.strip().startswith(';')]
         line_number_to_index = self.create_line_number_mapping(filtered_lines)
 
@@ -403,7 +376,7 @@ class SimulationProcessor:
         if vacuum_start_line is None or vacuum_end_line is None:
             print("No vacuum injection G-code found.")
             return
-        
+
         # Parse the vacuum G-code to get coordinates
         vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
         vacuum_coords = self.parse_gcode(vacuum_gcode)
