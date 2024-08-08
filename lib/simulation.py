@@ -154,7 +154,7 @@ class SimulationProcessor:
             for line in self.lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
-            print(self.segments[:num])
+            #print(self.segments[:num])
             for i, segment in enumerate(self.segments[:num]):
                 if segment:
                     x_vals, y_vals, z_vals = zip(*segment)
@@ -198,7 +198,6 @@ class SimulationProcessor:
     def update_slider(self, val):
         """Update the plot based on the slider value."""
         current_time = time.time()
-
         if current_time - int(self.last_slider_update) > self.slider_update_interval:
             self.last_slider_update = current_time
             try:
@@ -264,18 +263,19 @@ class SimulationProcessor:
         try:
         
             print("\n\n~~~~~~~~~~~~Coordinate Elements Original~~~~~~~~~~~~\n")
-            print(coordinates[0])
-            print(travel_coords_list[0])
-            print(e_coords_list[0])
 
             # Apply the filter before abstracting values below
             f_coords = filter_close_coordinates(coordinates)
             f_ecoords = filter_close_coordinates(e_coords_list)
             f_travel_coords = filter_close_coordinates(travel_coords_list)
             print("~~~~~~~~~~~~Coordinate Elements Filtered~~~~~~~~~~~~")
-            print(f_coords[0])
-            print(f_ecoords[0])
-            print(f_travel_coords[0])
+            # print(f_coords[0])
+            # print(f_ecoords[0])
+            # print(f_travel_coords[0])
+            print("Type: Coordinates, E_coords, Travel_coords")
+            print(type(coordinates), type(e_coords_list), type(travel_coords_list))
+            print("Type of filtered: Coordinates, E_coords, Travel_coords")
+            print(type(f_coords), type(f_ecoords), type(f_travel_coords))
 
             print(f"Length coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
             print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
@@ -302,9 +302,9 @@ class SimulationProcessor:
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
             self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
 
-            self.segments = self.split_into_segments(coordinates)
-            num_frames = len(self.segments)
-            self.interval = interval
+            # self.segments = self.split_into_segments(coordinates)
+            # num_frames = len(self.segments)
+            # self.interval = interval
 
             if num_frames == 0:
                 print("No segments found in the G-code. Cannot create animation.")
@@ -314,8 +314,10 @@ class SimulationProcessor:
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-            vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
-            self.filtered_vacuum_coords = filter_close_coordinates(vacuum_coords)
+            self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
+            
+            # print("Now we're gonna try filter the vacuum coordinates")
+            # self.filtered_vacuum_coords = filter_close_coordinates(vacuum_coords)
 
             # Set up the plot
             self.fig = plt.figure()
@@ -351,6 +353,7 @@ class SimulationProcessor:
             plt.show()
         
         except Exception as e:
+            print("Within plot_toolpath_animation")
             print(f"Error occured {e}")
 
     def plot_vacuum_animation(self, vacuum_coords, interval):
@@ -400,6 +403,7 @@ class SimulationProcessor:
             plt.show()
 
         except Exception as e:
+            print("Within plot_vacuum_animation")
             print(f"Error occured {e}")
 
     def plot_vacuum_toolpath(self):
@@ -414,6 +418,7 @@ class SimulationProcessor:
             else:
                 print("No vacuum G-code found in the file.")
         except Exception as e:
+            print("Within plot_vacuum_toolpath")
             print(f"Error occured {e}")
 
     def plot_original_toolpath(self):
@@ -425,6 +430,7 @@ class SimulationProcessor:
                 return
             self.plot_toolpath_animation(e_coords, travel_coords, coordinates, interval=50)
         except Exception as e:
+            print("Error within plot_original_toolpath")
             print(f"Error occured {e}")
 
 
@@ -440,6 +446,7 @@ class SimulationProcessor:
 
             return line_number_to_index
         except Exception as e:
+            print("Error within create_line_number_mapping")
             print(f"Error occured {e}")
 
     def get_vacuum_coordinates(self):
@@ -478,6 +485,7 @@ class SimulationProcessor:
 
             return vacuum_coords_frames
         except Exception as e:
+            print("Error within get_vacuum_coordinates")
             print(f"Error occured {e}")
 
 def filter_close_coordinates(coordinates, threshold=0.1):
@@ -488,15 +496,14 @@ def filter_close_coordinates(coordinates, threshold=0.1):
 
         print(f"You have input coordinates of length {len(coordinates)}")
 
-        # Convert to a NumPy array for easier manipulation and calculate distances
         filtered_coords = [coordinates[0]]  # Start with the first coordinate
 
         for coord in coordinates[1:]:
             last_filtered_coord = filtered_coords[-1]
             
-            # Extracting X, Y, Z for distance calculation
-            last_x, last_y, last_z = last_filtered_coord[1], last_filtered_coord[2], last_filtered_coord[3]
-            curr_x, curr_y, curr_z = coord[1], coord[2], coord[3]
+            # Extract X, Y, Z for distance calculation and ensure they're floats
+            last_x, last_y, last_z = float(last_filtered_coord[1]), float(last_filtered_coord[2]), float(last_filtered_coord[3])
+            curr_x, curr_y, curr_z = float(coord[1]), float(coord[2]), float(coord[3])
             
             distance = np.linalg.norm([curr_x - last_x, curr_y - last_y, curr_z - last_z])
             
@@ -504,7 +511,9 @@ def filter_close_coordinates(coordinates, threshold=0.1):
                 filtered_coords.append(coord)
 
         print(f"Returning length of final set of filtered_coords {len(filtered_coords)}")
+        print(type(filtered_coords))
         
         return filtered_coords
     except Exception as e:
+        print("Error within filter_close_coordinates")
         print(f"Error occured {e}")
