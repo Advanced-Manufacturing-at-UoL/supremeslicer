@@ -393,14 +393,16 @@ class SimulationProcessor:
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-
-        if vacuum_start_line is not None and vacuum_end_line is not None:
-            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-            vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
-            self.plot_vacuum_animation(vacuum_coords, interval=50)
-        else:
-            print("No vacuum G-code found in the file.")
+        try:
+            if vacuum_start_line is not None and vacuum_end_line is not None:
+                vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+                _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
+                vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
+                self.plot_vacuum_animation(vacuum_coords, interval=50)
+            else:
+                print("No vacuum G-code found in the file.")
+        except:
+            print("Caught within the vacuum toolpath")
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
