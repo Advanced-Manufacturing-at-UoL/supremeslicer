@@ -119,23 +119,23 @@ class SimulationProcessor:
 
         return segments
 
-    def split_into_segments_new(self, coordinates):
-        """Split coordinates into individual segments based on extrusion commands."""
-        segments = []
-        current_segment = []
+    # def split_into_segments_new(self, coordinates):
+    #     """Split coordinates into individual segments based on extrusion commands."""
+    #     segments = []
+    #     current_segment = []
 
-        for i, (x, y, z) in enumerate(coordinates):
-            if i > 0:  # This is to avoid index errors
-                previous_point = coordinates[i - 1]
-                if self.check_for_new_segment(previous_point, (x, y, z)):
-                    segments.append(current_segment)
-                    current_segment = []
-            current_segment.append((x, y, z))
+    #     for i, (x, y, z) in enumerate(coordinates):
+    #         if i > 0:  # This is to avoid index errors
+    #             previous_point = coordinates[i - 1]
+    #             if self.check_for_new_segment(previous_point, (x, y, z)):
+    #                 segments.append(current_segment)
+    #                 current_segment = []
+    #         current_segment.append((x, y, z))
 
-        if current_segment:
-            segments.append(current_segment)
+    #     if current_segment:
+    #         segments.append(current_segment)
         
-        return segments
+    #     return segments
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
@@ -179,7 +179,7 @@ class SimulationProcessor:
             if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
                 if self.vacuum_start_frame <= num:
                     vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
-                    if vacuum_segment:
+                    if vacuum_segment.size:
                         x_vals, y_vals, z_vals = zip(*vacuum_segment)
                         if hasattr(self, 'vacuum_line') and self.vacuum_line:
                             self.vacuum_line.set_data(x_vals, y_vals)
@@ -193,6 +193,7 @@ class SimulationProcessor:
             self.fig.canvas.draw_idle()
 
         return self.lines
+
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -258,26 +259,37 @@ class SimulationProcessor:
     def plot_toolpath_animation(self, e_coords_list, travel_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
         
+        print("\n\n~~~~~~~~~~~~Coordinate Elements Original~~~~~~~~~~~~\n")
         print(coordinates[0])
         print(travel_coords_list[0])
         print(e_coords_list[0])
 
         # Apply the filter before abstracting values below
-        f_coords = filter_close_coordinates(coordinates)#
+        f_coords = filter_close_coordinates(coordinates)
         f_ecoords = filter_close_coordinates(e_coords_list)
-        f_travel_coords = filter_close_coordinates(travel_coords_list[0])
+        f_travel_coords = filter_close_coordinates(travel_coords_list)
+        print("~~~~~~~~~~~~Coordinate Elements Filtered~~~~~~~~~~~~")
+        print(f_coords[0])
+        print(f_ecoords[0])
+        print(f_travel_coords[0])
+
+        print(f"Length coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
+        print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
+        print(f"Length e coords:{len(e_coords_list)}\nlength filtered e coords: {len(f_ecoords)}\n")
+
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n")
+
 
         common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
         travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
         coords = np.array([[x, y, z] for _, x, y, z, _, _ in f_coords])
         
         # Apply the filter just once, to filter the entire coordinates list
-
         self.common_e_coords_np = common_e_coords_np
         self.travel_coords_np = travel_coords
         self.coords_np = coords
 
-        self.segments = self.split_into_segments_new(self.coords_np)
+        self.segments = self.split_into_segments(f_coords)
         num_frames = len(self.segments)
         self.interval = interval
         print(f"The length of segments with the new approach is {len(self.segments)}")
