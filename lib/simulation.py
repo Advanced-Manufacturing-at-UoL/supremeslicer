@@ -239,6 +239,7 @@ class SimulationProcessor:
             new_val = min(int(current_val) + 1, self.slider.valmax)
         except ValueError:
             new_val = self.slider.valmax
+            
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
         self.update_plot(self.current_frame)
@@ -251,6 +252,7 @@ class SimulationProcessor:
             new_val = max(int(current_val) - 1, self.slider.valmin)
         except ValueError:
             new_val = self.slider.valmin
+
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
         self.update_plot(self.current_frame)
@@ -258,137 +260,147 @@ class SimulationProcessor:
 
     def plot_toolpath_animation(self, e_coords_list, travel_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
+
+        try:
         
-        print("\n\n~~~~~~~~~~~~Coordinate Elements Original~~~~~~~~~~~~\n")
-        print(coordinates[0])
-        print(travel_coords_list[0])
-        print(e_coords_list[0])
+            print("\n\n~~~~~~~~~~~~Coordinate Elements Original~~~~~~~~~~~~\n")
+            print(coordinates[0])
+            print(travel_coords_list[0])
+            print(e_coords_list[0])
 
-        # Apply the filter before abstracting values below
-        f_coords = filter_close_coordinates(coordinates)
-        f_ecoords = filter_close_coordinates(e_coords_list)
-        f_travel_coords = filter_close_coordinates(travel_coords_list)
-        print("~~~~~~~~~~~~Coordinate Elements Filtered~~~~~~~~~~~~")
-        print(f_coords[0])
-        print(f_ecoords[0])
-        print(f_travel_coords[0])
+            # Apply the filter before abstracting values below
+            f_coords = filter_close_coordinates(coordinates)
+            f_ecoords = filter_close_coordinates(e_coords_list)
+            f_travel_coords = filter_close_coordinates(travel_coords_list)
+            print("~~~~~~~~~~~~Coordinate Elements Filtered~~~~~~~~~~~~")
+            print(f_coords[0])
+            print(f_ecoords[0])
+            print(f_travel_coords[0])
 
-        print(f"Length coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
-        print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
-        print(f"Length e coords:{len(e_coords_list)}\nlength filtered e coords: {len(f_ecoords)}\n")
+            print(f"Length coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
+            print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
+            print(f"Length e coords:{len(e_coords_list)}\nlength filtered e coords: {len(f_ecoords)}\n")
 
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n")
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n")
 
 
-        common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
-        travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
-        coords = np.array([[x, y, z] for _, x, y, z, _, _ in f_coords])
+            common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
+            travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
+            coords = np.array([[x, y, z] for _, x, y, z, _, _ in f_coords])
+            
+            # Apply the filter just once, to filter the entire coordinates list
+            self.common_e_coords_np = common_e_coords_np
+            self.travel_coords_np = travel_coords
+            self.coords_np = coords
+
+            self.segments = self.split_into_segments(f_coords)
+            num_frames = len(self.segments)
+            self.interval = interval
+            print(f"The length of segments with the new approach is {len(self.segments)}")
+            
+            self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
+            self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
+            self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
+
+            self.segments = self.split_into_segments(coordinates)
+            num_frames = len(self.segments)
+            self.interval = interval
+
+            if num_frames == 0:
+                print("No segments found in the G-code. Cannot create animation.")
+                return
+
+            # Parse and store vacuum coordinates
+            vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+            _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
+            vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
+            self.filtered_vacuum_coords = filter_close_coordinates(vacuum_coords)
+
+            # Set up the plot
+            self.fig = plt.figure()
+            self.ax = self.fig.add_subplot(111, projection='3d')
+            self.lines = []
+            self.ax.set_xlim([0, 180])
+            self.ax.set_ylim([0, 180])
+            self.ax.set_zlim([0, 100])
+            self.ax.set_xlabel('X')
+            self.ax.set_ylabel('Y')
+            self.ax.set_zlabel('Z')
+            self.ax.set_title('G-code Toolpath Simulation')
+            
+            # Create playback controls
+            ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
+            ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
+            ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
+            ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
+            ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
+
+            btn_play = Button(ax_play, 'Play')
+            btn_pause = Button(ax_pause, 'Pause')
+            btn_forward = Button(ax_forward, 'Forward')
+            btn_backward = Button(ax_backward, 'Backward')
+            self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+
+            btn_play.on_clicked(self.play_animation)
+            btn_pause.on_clicked(self.pause_animation)
+            btn_forward.on_clicked(self.forward_frame)
+            btn_backward.on_clicked(self.backward_frame)
+            self.slider.on_changed(self.update_slider)
+
+            plt.show()
         
-        # Apply the filter just once, to filter the entire coordinates list
-        self.common_e_coords_np = common_e_coords_np
-        self.travel_coords_np = travel_coords
-        self.coords_np = coords
-
-        self.segments = self.split_into_segments(f_coords)
-        num_frames = len(self.segments)
-        self.interval = interval
-        print(f"The length of segments with the new approach is {len(self.segments)}")
-        
-        self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
-        self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
-        self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
-
-        self.segments = self.split_into_segments(coordinates)
-        num_frames = len(self.segments)
-        self.interval = interval
-
-        if num_frames == 0:
-            print("No segments found in the G-code. Cannot create animation.")
-            return
-
-        # Parse and store vacuum coordinates
-        vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-        vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-        _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-        vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
-        self.filtered_vacuum_coords = filter_close_coordinates(vacuum_coords)
-
-        # Set up the plot
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        self.lines = []
-        self.ax.set_xlim([0, 180])
-        self.ax.set_ylim([0, 180])
-        self.ax.set_zlim([0, 100])
-        self.ax.set_xlabel('X')
-        self.ax.set_ylabel('Y')
-        self.ax.set_zlabel('Z')
-        self.ax.set_title('G-code Toolpath Simulation')
-        
-        # Create playback controls
-        ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
-        ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
-        ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
-        ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
-        ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
-
-        btn_play = Button(ax_play, 'Play')
-        btn_pause = Button(ax_pause, 'Pause')
-        btn_forward = Button(ax_forward, 'Forward')
-        btn_backward = Button(ax_backward, 'Backward')
-        self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
-
-        btn_play.on_clicked(self.play_animation)
-        btn_pause.on_clicked(self.pause_animation)
-        btn_forward.on_clicked(self.forward_frame)
-        btn_backward.on_clicked(self.backward_frame)
-        self.slider.on_changed(self.update_slider)
-
-        plt.show()
+        except Exception as e:
+            print(f"Error occured {e}")
 
     def plot_vacuum_animation(self, vacuum_coords, interval):
         """Animate the vacuum toolpath given a list of (x, y, z) coordinates."""
-        self.vacuum_coords_np = np.array(vacuum_coords)
-        self.segments = [vacuum_coords]  # Treat the entire vacuum path as a single segment
-        num_frames = len(self.segments[0])  # Number of frames is the length of the vacuum path
-        self.interval = interval
 
-        if num_frames == 0:
-            print("No segments found in the vacuum G-code. Cannot create animation.")
-            return
+        try:
+            self.vacuum_coords_np = np.array(vacuum_coords)
+            self.segments = [vacuum_coords]  # Treat the entire vacuum path as a single segment
+            num_frames = len(self.segments[0])  # Number of frames is the length of the vacuum path
+            self.interval = interval
 
-        # Set up the plot
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        self.lines = []
-        self.ax.set_xlim([0, 180])
-        self.ax.set_ylim([0, 180])
-        self.ax.set_zlim([0, 100])
-        self.ax.set_xlabel('X')
-        self.ax.set_ylabel('Y')
-        self.ax.set_zlabel('Z')
-        self.ax.set_title('Vacuum G-code Toolpath Simulation')
+            if num_frames == 0:
+                print("No segments found in the vacuum G-code. Cannot create animation.")
+                return
 
-        # Create playback controls
-        ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
-        ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
-        ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
-        ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
-        ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
+            # Set up the plot
+            self.fig = plt.figure()
+            self.ax = self.fig.add_subplot(111, projection='3d')
+            self.lines = []
+            self.ax.set_xlim([0, 180])
+            self.ax.set_ylim([0, 180])
+            self.ax.set_zlim([0, 100])
+            self.ax.set_xlabel('X')
+            self.ax.set_ylabel('Y')
+            self.ax.set_zlabel('Z')
+            self.ax.set_title('Vacuum G-code Toolpath Simulation')
 
-        btn_play = Button(ax_play, 'Play')
-        btn_pause = Button(ax_pause, 'Pause')
-        btn_forward = Button(ax_forward, 'Forward')
-        btn_backward = Button(ax_backward, 'Backward')
-        self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+            # Create playback controls
+            ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
+            ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
+            ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
+            ax_backward = plt.axes([0.46, 0.02, 0.1, 0.075])
+            ax_slider = plt.axes([0.1, 0.09, 0.75, 0.03])
 
-        btn_play.on_clicked(self.play_animation)
-        btn_pause.on_clicked(self.pause_animation)
-        btn_forward.on_clicked(self.forward_frame)
-        btn_backward.on_clicked(self.backward_frame)
-        self.slider.on_changed(self.update_slider)
+            btn_play = Button(ax_play, 'Play')
+            btn_pause = Button(ax_pause, 'Pause')
+            btn_forward = Button(ax_forward, 'Forward')
+            btn_backward = Button(ax_backward, 'Backward')
+            self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
 
-        plt.show()
+            btn_play.on_clicked(self.play_animation)
+            btn_pause.on_clicked(self.pause_animation)
+            btn_forward.on_clicked(self.forward_frame)
+            btn_backward.on_clicked(self.backward_frame)
+            self.slider.on_changed(self.update_slider)
+
+            plt.show()
+
+        except Exception as e:
+            print(f"Error occured {e}")
 
     def plot_vacuum_toolpath(self):
         """Plot the vacuum toolpath from the G-code."""
@@ -401,87 +413,98 @@ class SimulationProcessor:
                 self.plot_vacuum_animation(vacuum_coords, interval=50)
             else:
                 print("No vacuum G-code found in the file.")
-        except:
-            print("Caught within the vacuum toolpath")
+        except Exception as e:
+            print(f"Error occured {e}")
 
     def plot_original_toolpath(self):
         """Plot the original toolpath from the full G-code."""
         e_coords, travel_coords, coordinates = self.parse_gcode(self.gcode)
+        try:
+            if not coordinates:
+                print("No coordinates found in the G-code.")
+                return
+            self.plot_toolpath_animation(e_coords, travel_coords, coordinates, interval=50)
+        except Exception as e:
+            print(f"Error occured {e}")
 
-        if not coordinates:
-            print("No coordinates found in the G-code.")
-            return
-
-        self.plot_toolpath_animation(e_coords, travel_coords, coordinates, interval=50)
 
     def create_line_number_mapping(self, filtered_lines):
         """Create a mapping of original line numbers to their indices in the filtered list."""
         line_number_to_index = {}
         current_line_number = 0
+        try:
+            for idx, line in enumerate(filtered_lines):
+                if line.strip() and not line.strip().startswith(';'):
+                    current_line_number += 1
+                    line_number_to_index[current_line_number] = idx
 
-        for idx, line in enumerate(filtered_lines):
-            if line.strip() and not line.strip().startswith(';'):
-                current_line_number += 1
-                line_number_to_index[current_line_number] = idx
-
-        return line_number_to_index
+            return line_number_to_index
+        except Exception as e:
+            print(f"Error occured {e}")
 
     def get_vacuum_coordinates(self):
         """Find and print the coordinates corresponding to the vacuum PnP toolpath."""
-        filtered_lines = [line.strip() for line in self.gcode if line.strip() and not line.strip().startswith(';')]
-        line_number_to_index = self.create_line_number_mapping(filtered_lines)
+        
+        try:
+        
+            filtered_lines = [line.strip() for line in self.gcode if line.strip() and not line.strip().startswith(';')]
+            line_number_to_index = self.create_line_number_mapping(filtered_lines)
 
-        # Find the vacuum G-code lines
-        vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-        if vacuum_start_line is None or vacuum_end_line is None:
-            print("No vacuum injection G-code found.")
-            return
+            # Find the vacuum G-code lines
+            vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+            if vacuum_start_line is None or vacuum_end_line is None:
+                print("No vacuum injection G-code found.")
+                return
 
-        # Parse the vacuum G-code to get coordinates
-        vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-        vacuum_coords = self.parse_gcode(vacuum_gcode)
+            # Parse the vacuum G-code to get coordinates
+            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+            vacuum_coords = self.parse_gcode(vacuum_gcode)
 
-        # Extract the original line numbers from the full G-code
-        full_gcode_coords = self.parse_gcode(self.gcode)
-        original_line_numbers = [coord[4] for coord in full_gcode_coords]
+            # Extract the original line numbers from the full G-code
+            full_gcode_coords = self.parse_gcode(self.gcode)
+            original_line_numbers = [coord[4] for coord in full_gcode_coords]
 
-        # Map line numbers to frame indices
-        line_number_to_frame = {line_number: idx for idx, (cmd, x, y, z, line_number) in enumerate(full_gcode_coords)}
+            # Map line numbers to frame indices
+            line_number_to_frame = {line_number: idx for idx, (cmd, x, y, z, line_number) in enumerate(full_gcode_coords)}
 
-        # Extract and print vacuum coordinates based on the frame indices
-        vacuum_coords_frames = [(vac_coord[1], vac_coord[2], vac_coord[3])
-                                for vac_coord in vacuum_coords
-                                if vac_coord[4] in line_number_to_frame]
+            # Extract and print vacuum coordinates based on the frame indices
+            vacuum_coords_frames = [(vac_coord[1], vac_coord[2], vac_coord[3])
+                                    for vac_coord in vacuum_coords
+                                    if vac_coord[4] in line_number_to_frame]
 
-        print("Vacuum PnP Coordinates:")
-        for frame in vacuum_coords_frames:
-            print(f"X: {frame[0]}, Y: {frame[1]}, Z: {frame[2]}")
+            print("Vacuum PnP Coordinates:")
+            for frame in vacuum_coords_frames:
+                print(f"X: {frame[0]}, Y: {frame[1]}, Z: {frame[2]}")
 
-        return vacuum_coords_frames
+            return vacuum_coords_frames
+        except Exception as e:
+            print(f"Error occured {e}")
 
 def filter_close_coordinates(coordinates, threshold=0.1):
     """Filter out coordinates that are too close to each other based on the threshold."""
-    
-    if not coordinates:
-        return []
+    try:
+        if not coordinates:
+            return []
 
-    print(f"You have input coordinates of length {len(coordinates)}")
+        print(f"You have input coordinates of length {len(coordinates)}")
 
-    # Convert to a NumPy array for easier manipulation and calculate distances
-    filtered_coords = [coordinates[0]]  # Start with the first coordinate
+        # Convert to a NumPy array for easier manipulation and calculate distances
+        filtered_coords = [coordinates[0]]  # Start with the first coordinate
 
-    for coord in coordinates[1:]:
-        last_filtered_coord = filtered_coords[-1]
+        for coord in coordinates[1:]:
+            last_filtered_coord = filtered_coords[-1]
+            
+            # Extracting X, Y, Z for distance calculation
+            last_x, last_y, last_z = last_filtered_coord[1], last_filtered_coord[2], last_filtered_coord[3]
+            curr_x, curr_y, curr_z = coord[1], coord[2], coord[3]
+            
+            distance = np.linalg.norm([curr_x - last_x, curr_y - last_y, curr_z - last_z])
+            
+            if distance > threshold:
+                filtered_coords.append(coord)
+
+        print(f"Returning length of final set of filtered_coords {len(filtered_coords)}")
         
-        # Extracting X, Y, Z for distance calculation
-        last_x, last_y, last_z = last_filtered_coord[1], last_filtered_coord[2], last_filtered_coord[3]
-        curr_x, curr_y, curr_z = coord[1], coord[2], coord[3]
-        
-        distance = np.linalg.norm([curr_x - last_x, curr_y - last_y, curr_z - last_z])
-        
-        if distance > threshold:
-            filtered_coords.append(coord)
-
-    print(f"Returning length of final set of filtered_coords {len(filtered_coords)}")
-    
-    return filtered_coords
+        return filtered_coords
+    except Exception as e:
+        print(f"Error occured {e}")
