@@ -172,14 +172,14 @@ class SimulationProcessor:
                     self.travel_line.set_3d_properties(self.travel_coords_np[:num, 2])
                 else:
                     travel_lines = self.travel_coords_np[:num]
-                    if travel_lines.size:
+                    if len(travel_lines):
                         x_vals, y_vals, z_vals = zip(*travel_lines)
                         self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
 
             if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
                 if self.vacuum_start_frame <= num:
                     vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
-                    if vacuum_segment.size:
+                    if len(vacuum_segment):
                         x_vals, y_vals, z_vals = zip(*vacuum_segment)
                         if hasattr(self, 'vacuum_line') and self.vacuum_line:
                             self.vacuum_line.set_data(x_vals, y_vals)
@@ -239,7 +239,7 @@ class SimulationProcessor:
             new_val = min(int(current_val) + 1, self.slider.valmax)
         except ValueError:
             new_val = self.slider.valmax
-            
+
         self.slider.set_val(new_val)
         self.current_frame = int(new_val)
         self.update_plot(self.current_frame)
