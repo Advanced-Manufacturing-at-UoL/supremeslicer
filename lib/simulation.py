@@ -22,6 +22,7 @@ class SimulationProcessor:
         self.show_travel = self.config.get('show_travel', 0)  # Flag from YAML configuration
         self.last_slider_update = time.time()
         self.slider_update_interval = 0.1
+        self.is_mesh_displayed = False  # New attribute to track mesh display
 
     def load_config(self):
         """Load configuration from a YAML file."""
@@ -119,28 +120,27 @@ class SimulationProcessor:
 
         return segments
 
+
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
-
-        if not self.animating: # Avoid updating if not animating
+        if not self.animating:  # Avoid updating if not animating
             return
 
-        if hasattr(self, 'vacuum_coords_np'):
-            vacuum_lines = self.vacuum_coords_np[:num]
-            if hasattr(self, 'vacuum_line') and self.vacuum_line:
-                self.vacuum_line.set_data(vacuum_lines[:, 0], vacuum_lines[:, 1])
-                self.vacuum_line.set_3d_properties(vacuum_lines[:, 2])
-            else:
-                self.vacuum_line, = self.ax.plot(vacuum_lines[:, 0], vacuum_lines[:, 1], vacuum_lines[:, 2], color='blue')
+        if not hasattr(self, 'lines'):
+            self.lines = []
 
-        else:
-            if not hasattr(self, 'lines'):
-                self.lines = []
+        # Clear existing lines and mesh
+        for line in self.lines:
+            line.set_data([], [])
+            line.set_3d_properties([])
+        if hasattr(self, 'mesh') and self.mesh:
+            self.mesh.remove()
+            self.mesh = None
 
-            for line in self.lines:
-                line.set_data([], [])
-                line.set_3d_properties([])
-            #print(self.segments[:num])
+        if self.is_mesh_displayed:  # Display mesh when paused
+            x_vals, y_vals, z_vals = zip(*self.coords_np[:num])
+            self.mesh = self.ax.plot_trisurf(x_vals, y_vals, z_vals, color='b', alpha=0.3)
+        else:  # Display lines during animation
             for i, segment in enumerate(self.segments[:num]):
                 if segment:
                     x_vals, y_vals, z_vals = zip(*segment)
@@ -152,51 +152,34 @@ class SimulationProcessor:
                         line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
                         self.lines.append(line)
 
-            if self.show_travel:
+        if self.show_travel:
+            travel_lines = self.travel_coords_np[:num]
+            if len(travel_lines):
+                x_vals, y_vals, z_vals = zip(*travel_lines)
                 if hasattr(self, 'travel_line') and self.travel_line:
-                    self.travel_line.set_data(self.travel_coords_np[:num, 0], self.travel_coords_np[:num, 1])
-                    self.travel_line.set_3d_properties(self.travel_coords_np[:num, 2])
+                    self.travel_line.set_data(x_vals, y_vals)
+                    self.travel_line.set_3d_properties(z_vals)
                 else:
-                    travel_lines = self.travel_coords_np[:num]
-                    if len(travel_lines):
-                        x_vals, y_vals, z_vals = zip(*travel_lines)
-                        self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
+                    self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
 
-            if self.vacuum_start_frame is not None and self.vacuum_end_frame is not None:
-                if self.vacuum_start_frame <= num:
-                    vacuum_segment = self.vacuum_coords[:num - self.vacuum_start_frame]
-                    if len(vacuum_segment):
-                        x_vals, y_vals, z_vals = zip(*vacuum_segment)
-                        if hasattr(self, 'vacuum_line') and self.vacuum_line:
-                            self.vacuum_line.set_data(x_vals, y_vals)
-                            self.vacuum_line.set_3d_properties(z_vals)
-                        else:
-                            self.vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
+        if self.slider.val != num:
+            self.slider.set_val(num)
 
-            if self.slider.val != num:
-                self.slider.set_val(num)
+        self.fig.canvas.draw_idle()
 
-            self.fig.canvas.draw_idle()
-
-        return self.lines
-
-
-    def update_slider(self, val):
-        """Update the plot based on the slider value."""
-        if not self.animating: # Allow slider updates when paused
-            current_time = time.time()
-            if current_time - int(self.last_slider_update) > self.slider_update_interval:
-                self.last_slider_update = current_time
-                try:
-                    frame = int(val)
-                except ValueError:
-                    frame = 0
-                self.update_plot(frame)
-                self.fig.canvas.draw_idle()
+    def pause_animation(self, event):
+        """Pause the animation and display the mesh."""
+        if self.animating:
+            self.animating = False
+            if hasattr(self, 'ani'):
+                self.ani.event_source.stop()
+            self.is_mesh_displayed = True  # Show mesh when paused
+            self.update_plot(self.current_frame)  # Update plot to show mesh
 
     def play_animation(self, event):
         """Start or resume the animation from the current slider value."""
         if not self.animating:
+            self.is_mesh_displayed = False  # Switch back to line display when playing
             self.animating = True
             try:
                 self.current_frame = int(self.slider.val)
@@ -212,12 +195,18 @@ class SimulationProcessor:
         else:
             self.ani.event_source.start()
 
-    def pause_animation(self, event):
-        """Pause the animation."""
-        if self.animating:
-            self.animating = False
-            if hasattr(self, 'ani'):
-                self.ani.event_source.stop()
+    def update_slider(self, val):
+        """Update the plot based on the slider value."""
+        if not self.animating: # Allow slider updates when paused
+            current_time = time.time()
+            if current_time - int(self.last_slider_update) > self.slider_update_interval:
+                self.last_slider_update = current_time
+                try:
+                    frame = int(val)
+                except ValueError:
+                    frame = 0
+                self.update_plot(frame)
+                self.fig.canvas.draw_idle()
 
     def forward_frame(self, event):
         """Move one frame forward."""
