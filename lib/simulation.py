@@ -119,26 +119,12 @@ class SimulationProcessor:
 
         return segments
 
-    # def split_into_segments_new(self, coordinates):
-    #     """Split coordinates into individual segments based on extrusion commands."""
-    #     segments = []
-    #     current_segment = []
-
-    #     for i, (x, y, z) in enumerate(coordinates):
-    #         if i > 0:  # This is to avoid index errors
-    #             previous_point = coordinates[i - 1]
-    #             if self.check_for_new_segment(previous_point, (x, y, z)):
-    #                 segments.append(current_segment)
-    #                 current_segment = []
-    #         current_segment.append((x, y, z))
-
-    #     if current_segment:
-    #         segments.append(current_segment)
-        
-    #     return segments
-
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
+
+        if not self.animating: # Avoid updating if not animating
+            return
+
         if hasattr(self, 'vacuum_coords_np'):
             vacuum_lines = self.vacuum_coords_np[:num]
             if hasattr(self, 'vacuum_line') and self.vacuum_line:
@@ -197,15 +183,16 @@ class SimulationProcessor:
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
-        current_time = time.time()
-        if current_time - int(self.last_slider_update) > self.slider_update_interval:
-            self.last_slider_update = current_time
-            try:
-                frame = int(val)
-            except ValueError:
-                frame = 0
-            self.update_plot(frame)
-            self.fig.canvas.draw_idle()
+        if not self.animating: # Allow slider updates when paused
+            current_time = time.time()
+            if current_time - int(self.last_slider_update) > self.slider_update_interval:
+                self.last_slider_update = current_time
+                try:
+                    frame = int(val)
+                except ValueError:
+                    frame = 0
+                self.update_plot(frame)
+                self.fig.canvas.draw_idle()
 
     def play_animation(self, event):
         """Start or resume the animation from the current slider value."""
@@ -229,7 +216,8 @@ class SimulationProcessor:
         """Pause the animation."""
         if self.animating:
             self.animating = False
-            self.ani.event_source.stop()
+            if hasattr(self, 'ani'):
+                self.ani.event_source.stop()
 
     def forward_frame(self, event):
         """Move one frame forward."""
