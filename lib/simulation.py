@@ -120,18 +120,22 @@ class SimulationProcessor:
         return segments
 
     def split_into_segments_new(self, coordinates):
-            """Split coordinates into individual segments based on extrusion commands."""
-            segments = []
-            current_segment = []
+        """Split coordinates into individual segments based on extrusion commands."""
+        segments = []
+        current_segment = []
 
-            for x, y, z, in coordinates:
-                current_segment.append((x, y, z))
+        for i, (x, y, z) in enumerate(coordinates):
+            if i > 0:  # This is to avoid index errors
+                previous_point = coordinates[i - 1]
+                if self.check_for_new_segment(previous_point, (x, y, z)):
+                    segments.append(current_segment)
+                    current_segment = []
+            current_segment.append((x, y, z))
 
-            if current_segment:
-                segments.append(current_segment)
-
-            return segments
-
+        if current_segment:
+            segments.append(current_segment)
+        
+        return segments
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
@@ -254,34 +258,37 @@ class SimulationProcessor:
     def plot_toolpath_animation(self, e_coords_list, travel_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
         
-        common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
-        travel_coords = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
-        coords = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
-        
-        print("About to filter all coordiantes within plot_toolpath_animation\n")
-        filtered_e_coords = filter_close_coordinates(common_e_coords_np)
-        filtered_travel_coords = filter_close_coordinates(travel_coords)
-        filtered_coords = filter_close_coordinates(coords)
+        print(coordinates[0])
+        print(travel_coords_list[0])
+        print(e_coords_list[0])
 
-        self.common_e_coords_np = filtered_e_coords
-        self.travel_coords_np = filtered_travel_coords
-        self.coords_np = filtered_coords
+        # Apply the filter before abstracting values below
+        f_coords = filter_close_coordinates(coordinates)#
+        f_ecoords = filter_close_coordinates(e_coords_list)
+        f_travel_coords = filter_close_coordinates(travel_coords_list[0])
+
+        common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
+        travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
+        coords = np.array([[x, y, z] for _, x, y, z, _, _ in f_coords])
+        
+        # Apply the filter just once, to filter the entire coordinates list
+
+        self.common_e_coords_np = common_e_coords_np
+        self.travel_coords_np = travel_coords
+        self.coords_np = coords
 
         self.segments = self.split_into_segments_new(self.coords_np)
-        print(self.segments)
-        print(f"The length of segments with the new approach is {len(self.segments)}")
         num_frames = len(self.segments)
         self.interval = interval
-
-        # self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
-        # self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
-        # self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
-
-        # self.segments = self.split_into_segments(coordinates)
-        # num_frames = len(self.segments)
-        # self.interval = interval
-
+        print(f"The length of segments with the new approach is {len(self.segments)}")
         
+        self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
+        self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
+        self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
+
+        self.segments = self.split_into_segments(coordinates)
+        num_frames = len(self.segments)
+        self.interval = interval
 
         if num_frames == 0:
             print("No segments found in the G-code. Cannot create animation.")
@@ -438,20 +445,29 @@ class SimulationProcessor:
 
         return vacuum_coords_frames
 
-def filter_close_coordinates(coords_np, threshold=0.1):
+def filter_close_coordinates(coordinates, threshold=0.1):
     """Filter out coordinates that are too close to each other based on the threshold."""
-    if coords_np.size == 0:
-        return coords_np
-    print(f"You have input coordinates of length {len(coords_np)}")
-    coords_np = coords_np.astype(float)
     
-    filtered_coords = [coords_np[0]]
-    for coord in coords_np[1:]:
-        # Calculate Euclidean distance from the last filtered coordinate
+    if not coordinates:
+        return []
+
+    print(f"You have input coordinates of length {len(coordinates)}")
+
+    # Convert to a NumPy array for easier manipulation and calculate distances
+    filtered_coords = [coordinates[0]]  # Start with the first coordinate
+
+    for coord in coordinates[1:]:
         last_filtered_coord = filtered_coords[-1]
-        distance = np.linalg.norm(coord - last_filtered_coord)
+        
+        # Extracting X, Y, Z for distance calculation
+        last_x, last_y, last_z = last_filtered_coord[1], last_filtered_coord[2], last_filtered_coord[3]
+        curr_x, curr_y, curr_z = coord[1], coord[2], coord[3]
+        
+        distance = np.linalg.norm([curr_x - last_x, curr_y - last_y, curr_z - last_z])
+        
         if distance > threshold:
             filtered_coords.append(coord)
+
     print(f"Returning length of final set of filtered_coords {len(filtered_coords)}")
-    filtered_coords_np = np.array(filtered_coords)
-    return filtered_coords_np
+    
+    return filtered_coords
