@@ -1,12 +1,19 @@
 import pyvista as pv
 import numpy as np
 import re
+import time
 
 class ToolpathAnimator:
+    """Toolpath Animation Class for PyVista approach"""
     def __init__(self, gcode_file):
         self.gcode_file = gcode_file
         self.plot_data = None
         self.plotter = None
+        self.layers = None
+        self.meshes_per_layer = None
+        self.current_step = 0
+        self.is_playing = False
+        self.slider = None
 
     def parse_gcode(self):
         """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
@@ -24,6 +31,7 @@ class ToolpathAnimator:
         material = 'polymer'  # Default material
         move_type = 'travel'  # Default move type
 
+        # Open the GCode File
         with open(self.gcode_file, 'r') as file:
             gcode = file.readlines()
 
@@ -62,37 +70,31 @@ class ToolpathAnimator:
 
     @staticmethod
     def create_toolpath_mesh(x, y, z, radius, resolution=10):
+        """Create a tube mesh representing the toolpath."""
         points = np.column_stack((x, y, z))
-        lines = []
-        for i in range(len(points) - 1):
-            lines.append([2, i, i+1])
+        lines = [[2, i, i + 1] for i in range(len(points) - 1)]
         poly = pv.PolyData(points, lines=lines)
         return poly.tube(radius=radius, n_sides=resolution)
 
-    def animate_toolpath(self):
-        if self.plot_data is None:
-            raise ValueError("Plot data is not initialized. Please run parse_gcode first.")
-        
+    def setup_plotter(self):
+        """Setup the plotter with widgets for slider."""
         self.plotter = pv.Plotter()
         self.plotter.set_background('white')
-        
+        self.plotter.add_text('Layer 0', font_size=12, color='black')
+
+        # Define colors and radii for different categories
         categories = {
             ('polymer', 'travel'): {'color': 'pink', 'radius': 0.1},
             ('polymer', 'print'): {'color': 'red', 'radius': 0.3},
             ('ceramic', 'travel'): {'color': 'lightblue', 'radius': 0.1},
             ('ceramic', 'print'): {'color': 'blue', 'radius': 0.6}
         }
-        
-        layers = sorted(set(self.plot_data['layer']))
 
-        # Open a movie file
-        self.plotter.open_movie('toolpath_building.mp4', framerate=10)
-        
-        # Create a dictionary to hold meshes for each layer
-        meshes_per_layer = {layer: [] for layer in layers}
-        
-        # Create meshes for each layer and store them
-        for layer in layers:
+        # Prepare a dictionary to store meshes for each layer
+        self.meshes_per_layer = {layer: [] for layer in self.layers}
+
+        # Generate and store meshes for each layer
+        for layer in self.layers:
             for (material, move_type), properties in categories.items():
                 mask = [(s == material and t == move_type and l == layer) 
                         for s, t, l in zip(self.plot_data['system'], self.plot_data['type'], self.plot_data['layer'])]
@@ -100,35 +102,51 @@ class ToolpathAnimator:
                     x = np.array(self.plot_data['X'])[mask]
                     y = np.array(self.plot_data['Y'])[mask]
                     z = np.array(self.plot_data['Z'])[mask]
-                    
                     if len(x) > 1:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
-                        meshes_per_layer[layer].append((mesh, properties['color']))
+                        self.meshes_per_layer[layer].append((mesh, properties['color']))
 
-        # Initialize the plotter with empty content
-        self.plotter.add_text('Layer 0', font_size=12, color='black')
-        self.plotter.show_axes()
-        self.plotter.show_grid()
+        # Add slider widget
+        def slider_callback(value):
+            self.current_step = int(value)
+            self.update_plot()
+
+        self.slider = self.plotter.add_slider_widget(
+            slider_callback, 
+            title='Layer', 
+            rng=(0, len(self.layers) - 1),
+            value=0,
+            pointa=(0.1, 0.01, 0),
+            pointb=(0.9, 0.01, 0)
+        )
+
+    def update_plot(self):
+        """Update the plotter to show the current step."""
+        self.plotter.clear_actors()  # Clear only the plot data, keeping the axes
+
+        for layer in self.layers[:self.current_step + 1]:
+            for mesh, color in self.meshes_per_layer[layer]:
+                self.plotter.add_mesh(mesh, color=color)
         
-        for step in range(len(layers)):
-            # Clear only plot data, keep the axes
-            self.plotter.clear_actors()
-            
-            # Add meshes up to the current layer
-            for layer in layers[:step + 1]:
-                for mesh, color in meshes_per_layer[layer]:
-                    self.plotter.add_mesh(mesh, color=color)
-            
-            # Update the text to show the current layer
-            self.plotter.add_text(f'Layer {layers[step]}', font_size=12, color='black')
+        # Update the text to show the current layer
+        self.plotter.add_text(f'Layer {self.layers[self.current_step]}', font_size=12, color='black')
+        self.plotter.render()
 
-            # Write the frame
-            self.plotter.write_frame()
-        
-        # Close the movie file
-        self.plotter.close()
+    def animate_toolpath(self):
+        """Set up the plotter and display the interactive animation."""
+        self.layers = sorted(set(self.plot_data['layer']))
+        self.setup_plotter()
+        self.plotter.show()
+        # Main loop for play/pause control
+        while True:
+            if self.is_playing and self.current_step < len(self.layers) - 1:
+                self.current_step += 1
+                self.update_plot()
+                time.sleep(0.1)  # Adjust this delay as needed
 
-# Usage example
-animator = ToolpathAnimator(r'C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\CustomSuperSlicer\supremeslicer\output\benchy.gcode')
-animator.parse_gcode()
-animator.animate_toolpath()
+if __name__ == "__main__":
+    print("Rendering animation of the simulation")
+    # Usage example
+    animator = ToolpathAnimator(r'C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\CustomSuperSlicer\supremeslicer\output\benchy.gcode')
+    animator.parse_gcode()
+    animator.animate_toolpath()
