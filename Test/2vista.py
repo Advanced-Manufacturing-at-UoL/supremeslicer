@@ -114,10 +114,10 @@ class ToolpathAnimator:
         self.slider = self.plotter.add_slider_widget(
             slider_callback, 
             title='Layer', 
-            rng=(0, len(self.layers) - 1),
+            rng=(0, len(self.layers)),
             value=0,
-            pointa=(0.1, 0.01, 0),
-            pointb=(0.9, 0.01, 0)
+            pointa=(0.1, 0.05, 0),
+            pointb=(0.9, 0.05, 0)
         )
 
     def update_plot(self):
@@ -130,13 +130,15 @@ class ToolpathAnimator:
         
         # Update the text to show the current layer
         self.plotter.add_text(f'Layer {self.layers[self.current_step]}', font_size=12, color='black')
-        self.plotter.render()
+        self.plotter.render()        
+        self.plotter.show_axes_all()
+        self.plotter.show_grid()
+        self.plotter.show()
 
     def animate_toolpath(self):
         """Set up the plotter and display the interactive animation."""
         self.layers = sorted(set(self.plot_data['layer']))
         self.setup_plotter()
-        self.plotter.show()
         # Main loop for play/pause control
         while True:
             if self.is_playing and self.current_step < len(self.layers) - 1:
