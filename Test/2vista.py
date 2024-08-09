@@ -17,6 +17,8 @@ class ToolpathAnimator:
 
     def parse_gcode(self):
         """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
+        print("Parsing Gcode")
+        start_time = time.time()
         data = {
             'X': [],
             'Y': [],
@@ -67,6 +69,8 @@ class ToolpathAnimator:
                 move_type = 'travel'
 
         self.plot_data = data
+        end_time = time.time()
+        print(f"Time taken to start animation {round((start_time-end_time),2)}\n")
 
     @staticmethod
     def create_toolpath_mesh(x, y, z, radius, resolution=10):
@@ -78,6 +82,9 @@ class ToolpathAnimator:
 
     def setup_plotter(self):
         """Setup the plotter with widgets for slider."""
+        print("Setting up plotter\n")
+        start_time = time.time()
+
         self.plotter = pv.Plotter()
         self.plotter.set_background('white')
         self.plotter.add_text('Layer 0', font_size=12, color='black')
@@ -120,6 +127,10 @@ class ToolpathAnimator:
             pointb=(0.9, 0.05, 0)
         )
 
+        
+        end_time = time.time()
+        print(f"Time taken to setup animation: {round((start_time-end_time),2)}\n")
+
     def update_plot(self):
         """Update the plotter to show the current step."""
         self.plotter.clear_actors()  # Clear only the plot data, keeping the axes
@@ -129,7 +140,7 @@ class ToolpathAnimator:
                 self.plotter.add_mesh(mesh, color=color)
         
         # Update the text to show the current layer
-        self.plotter.add_text(f'Layer {self.layers[self.current_step]}', font_size=12, color='black')
+        self.plotter.add_text(f'Layer {self.layers[self.current_step -1]}', font_size=12, color='black')
         self.plotter.render()        
         self.plotter.show_axes_all()
         self.plotter.show_grid()
@@ -137,9 +148,14 @@ class ToolpathAnimator:
 
     def animate_toolpath(self):
         """Set up the plotter and display the interactive animation."""
+        print("Animating toolpath")
+        start_time = time.time()
         self.layers = sorted(set(self.plot_data['layer']))
         self.setup_plotter()
         # Main loop for play/pause control
+
+        end_time = time.time()
+        print(f"Time taken to automatically render animation {round((start_time-end_time),2)}\n")
         while True:
             if self.is_playing and self.current_step < len(self.layers) - 1:
                 self.current_step += 1
