@@ -1,8 +1,6 @@
 import pyvista as pv
 import numpy as np
 import re
-import imageio
-import os
 
 def parse_gcode(gcode):
     """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
@@ -61,8 +59,8 @@ def create_toolpath_mesh(x, y, z, radius, resolution=10):
     poly = pv.PolyData(points, lines=lines)
     return poly.tube(radius=radius, n_sides=resolution)
 
-def create_gif(plot_data, gif_filename='toolpath_animation.gif'):
-    plotter = pv.Plotter(off_screen=True)
+def animate_toolpath(plot_data):
+    plotter = pv.Plotter()
     plotter.set_background('white')
     
     categories = {
@@ -73,52 +71,41 @@ def create_gif(plot_data, gif_filename='toolpath_animation.gif'):
     }
     
     layers = sorted(set(plot_data['layer']))
+
+    # Open a movie file
+    plotter.open_movie('toolpath_building.mp4', framerate=10)
     
-    # Directory to save frames
-    temp_dir = 'frames'
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    frame_filenames = []
-    
-    for step, layer in enumerate(layers):
-        plotter.clear()  # Clear previous layer's plot
+    # Plot all layers up to and including the current layer
+    for step in range(len(layers)):
+        plotter.clear()
         
-        for (material, move_type), properties in categories.items():
-            mask = [(s == material and t == move_type and l == layer) 
-                    for s, t, l in zip(plot_data['system'], plot_data['type'], plot_data['layer'])]
-            if any(mask):
-                x = np.array(plot_data['X'])[mask]
-                y = np.array(plot_data['Y'])[mask]
-                z = np.array(plot_data['Z'])[mask]
-                
-                if len(x) > 1:
-                    mesh = create_toolpath_mesh(x, y, z, radius=properties['radius'])
-                    plotter.add_mesh(mesh, color=properties['color'], 
-                                     label=f"{material.capitalize()} {move_type} (Layer {layer})")
+        for layer in layers[:step + 1]:
+            for (material, move_type), properties in categories.items():
+                mask = [(s == material and t == move_type and l == layer) 
+                        for s, t, l in zip(plot_data['system'], plot_data['type'], plot_data['layer'])]
+                if any(mask):
+                    x = np.array(plot_data['X'])[mask]
+                    y = np.array(plot_data['Y'])[mask]
+                    z = np.array(plot_data['Z'])[mask]
+                    
+                    if len(x) > 1:
+                        mesh = create_toolpath_mesh(x, y, z, radius=properties['radius'])
+                        plotter.add_mesh(mesh, color=properties['color'], 
+                                         label=f"{material.capitalize()} {move_type} (Layer {layer})")
         
-        plotter.add_text(f'Layer {layer}', font_size=12, color='black')
+        plotter.add_text(f'Layer {layers[step]}', font_size=12, color='black')
         plotter.show_axes()
         plotter.show_grid()
         
-        # Save the current frame
-        frame_filename = os.path.join(temp_dir, f'frame_{step:03d}.png')
-        plotter.screenshot(frame_filename)
-        frame_filenames.append(frame_filename)
+        # Write the frame
+        plotter.write_frame()
     
-    # Create GIF
-    with imageio.get_writer(gif_filename, mode='I', duration=0.5) as writer:
-        for filename in frame_filenames:
-            image = imageio.imread(filename)
-            writer.append_data(image)
-    
-    # Clean up
-    for filename in frame_filenames:
-        os.remove(filename)
-    os.rmdir(temp_dir)
+    # Close the movie file
+    plotter.close()
 
 # Usage example
 with open(r'C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\CustomSuperSlicer\supremeslicer\output\benchy.gcode', 'r') as file:
     gcode_lines = file.readlines()
 
 parsed_data = parse_gcode(gcode_lines)
-create_gif(parsed_data, 'toolpath_animation.gif')
+animate_toolpath(parsed_data)
