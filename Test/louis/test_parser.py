@@ -49,12 +49,12 @@ parser = GCodeParser()
 parser.parse_file(r'C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\CustomSuperSlicer\supremeslicer\output\benchy.gcode')
 visualize_toolpath(parser)
 
-print("\nLayer Z values:")
-for layer, z_value in sorted(parser.layer_z_values.items()):
-    print(f"Layer {layer}: Z = {z_value}")
+# print("\nLayer Z values:")
+# for layer, z_value in sorted(parser.layer_z_values.items()):
+#     print(f"Layer {layer}: Z = {z_value}")
 
-# Print summary and debug info
-parser.print_move_summary()
-print("\nDebug log (last 20 lines):")
-for log in parser.debug_log[-20:]:
-    print(log)
+# # Print summary and debug info
+# parser.print_move_summary()
+# print("\nDebug log (last 20 lines):")
+# for log in parser.debug_log[-20:]:
+#     print(log)
