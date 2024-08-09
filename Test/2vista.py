@@ -1,6 +1,8 @@
 import pyvista as pv
 import numpy as np
 import re
+import imageio
+import os
 
 def parse_gcode(gcode):
     """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
@@ -59,8 +61,8 @@ def create_toolpath_mesh(x, y, z, radius, resolution=10):
     poly = pv.PolyData(points, lines=lines)
     return poly.tube(radius=radius, n_sides=resolution)
 
-def visualize_toolpath(plot_data):
-    plotter = pv.Plotter()
+def create_gif(plot_data, gif_filename='toolpath_animation.gif'):
+    plotter = pv.Plotter(off_screen=True)
     plotter.set_background('white')
     
     categories = {
@@ -70,8 +72,18 @@ def visualize_toolpath(plot_data):
         ('ceramic', 'print'): {'color': 'blue', 'radius': 0.6}
     }
     
-    for (material, move_type), properties in categories.items():
-        for layer in set(plot_data['layer']):
+    layers = sorted(set(plot_data['layer']))
+    
+    # Directory to save frames
+    temp_dir = 'frames'
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    frame_filenames = []
+    
+    for step, layer in enumerate(layers):
+        plotter.clear()  # Clear previous layer's plot
+        
+        for (material, move_type), properties in categories.items():
             mask = [(s == material and t == move_type and l == layer) 
                     for s, t, l in zip(plot_data['system'], plot_data['type'], plot_data['layer'])]
             if any(mask):
@@ -83,15 +95,30 @@ def visualize_toolpath(plot_data):
                     mesh = create_toolpath_mesh(x, y, z, radius=properties['radius'])
                     plotter.add_mesh(mesh, color=properties['color'], 
                                      label=f"{material.capitalize()} {move_type} (Layer {layer})")
+        
+        plotter.add_text(f'Layer {layer}', font_size=12, color='black')
+        plotter.show_axes()
+        plotter.show_grid()
+        
+        # Save the current frame
+        frame_filename = os.path.join(temp_dir, f'frame_{step:03d}.png')
+        plotter.screenshot(frame_filename)
+        frame_filenames.append(frame_filename)
     
-    plotter.add_legend()
-    plotter.show_axes()
-    plotter.show_grid()
-    plotter.show(title="3D Toolpath Visualization")
+    # Create GIF
+    with imageio.get_writer(gif_filename, mode='I', duration=0.5) as writer:
+        for filename in frame_filenames:
+            image = imageio.imread(filename)
+            writer.append_data(image)
+    
+    # Clean up
+    for filename in frame_filenames:
+        os.remove(filename)
+    os.rmdir(temp_dir)
 
 # Usage example
-with open(r'output\benchy.gcode', 'r') as file:
+with open(r'C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\CustomSuperSlicer\supremeslicer\output\benchy.gcode', 'r') as file:
     gcode_lines = file.readlines()
 
 parsed_data = parse_gcode(gcode_lines)
-visualize_toolpath(parsed_data)
+create_gif(parsed_data, 'toolpath_animation.gif')
