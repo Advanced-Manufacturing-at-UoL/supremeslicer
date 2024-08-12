@@ -2,6 +2,7 @@ from lib.super_slicer import SuperSlicer
 from lib.utils import Utils
 from tools.vacuum_pnp import VacuumPnP
 from lib.simulation import SimulationProcessor
+from lib.animation import ToolpathAnimator
 import os
 
 """Main Engine Class for running the overall program"""
@@ -117,6 +118,38 @@ class MainEngine:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
+    def _run_animation(self):
+        """Runs the simulation for plotting the toolpath."""
+        try:
+            print("1. Output rendered simulation")
+            print("2. Output render to file")
+            user_in = int(input("Please choose an option\n"))
+
+            # Retrieve the output folder and file
+            self._output_folder()
+
+            # Initialise animator
+            animator = ToolpathAnimator(self.filename)
+            
+            animator.parse_gcode()
+            
+            if user_in == 1:
+                animator.animate_toolpath()
+                print("Completed plotting original toolpath.")
+            elif user_in == 2:
+                print("This has not been completed yet")
+            else:
+                print("Invalid selection. Please choose 1 or 2.")
+
+        except ValueError as ve:
+            print(f"Value error: {ve}")
+        except FileNotFoundError as fnfe:
+            print(f"File not found error: {fnfe}")
+        except IOError as ioe:
+            print(f"IO error: {ioe}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
     def _read_config(self):
         Utils.sleep(1)
         self.start()
@@ -136,7 +169,8 @@ class MainEngine:
             print("2. Slice a g-code file")
             print("3. Access tools")
             print("4. Create Simulation")
-            print("5. Exit\n")
+            print("5. Render Animation")
+            print("6. Exit\n")
 
             try:
                 user_in = int(input("Please select an option\n"))
@@ -153,6 +187,8 @@ class MainEngine:
             elif user_in == 4:
                 self._run_simulation()
             elif user_in == 5:
+                self._run_animation()
+            elif user_in == 6:
                 print("Exiting SupremeSlicer\n")
                 Utils.exit_on('Thank you\n')
             else:
