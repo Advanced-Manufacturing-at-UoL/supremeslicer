@@ -465,7 +465,7 @@ class SimulationProcessor:
             print("Error within get_vacuum_coordinates")
             print(f"Error occured {e}")
 
-def filter_close_coordinates(coordinates, threshold=2.5):
+def filter_close_coordinates(coordinates, threshold=0.1):
     """Filter out coordinates that are too close to each other based on the threshold."""
     try:
         if not coordinates:
