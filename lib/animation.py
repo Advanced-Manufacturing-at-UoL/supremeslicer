@@ -156,8 +156,18 @@ class ToolpathAnimator:
 
         end_time = time.time()
         print(f"Time taken to automatically render animation {round((start_time-end_time),2)}\n")
-        while True:
-            if self.is_playing and self.current_step < len(self.layers) - 1:
-                self.current_step += 1
-                self.update_plot()
-                time.sleep(0.1)  # Adjust this delay as needed
+        
+        try:
+            while True:
+                if self.is_playing and self.current_step < len(self.layers) - 1:
+                    self.current_step += 1
+                    self.update_plot()
+                    time.sleep(0.1)  # Adjust this delay as needed
+
+        except KeyboardInterrupt:
+            print("Keyboard interrupt detected, exitting program")
+            pass
+        
+        finally:
+            print("Exitting")
+            pass
