@@ -70,7 +70,7 @@ class ToolpathAnimator:
 
         self.plot_data = data
         end_time = time.time()
-        print(f"Time taken to start animation {round((start_time-end_time),2)}\n")
+        print(f"Time taken to start animation {round((end_time-start_time),2)}\n")
 
     @staticmethod
     def create_toolpath_mesh(x, y, z, radius, resolution=10):
@@ -129,7 +129,7 @@ class ToolpathAnimator:
 
         
         end_time = time.time()
-        print(f"Time taken to setup animation: {round((start_time-end_time),2)}\n")
+        print(f"Time taken to setup animation: {round((end_time-start_time),2)}\n")
 
     def update_plot(self):
         """Update the plotter to show the current step."""
@@ -155,7 +155,7 @@ class ToolpathAnimator:
         # Main loop for play/pause control
 
         end_time = time.time()
-        print(f"Time taken to automatically render animation {round((start_time-end_time),2)}\n")
+        print(f"Time taken to automatically render animation {round((end_time-start_time),2)}\n")
         
         try:
             while True:
