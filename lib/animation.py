@@ -2,6 +2,12 @@ import pyvista as pv
 import numpy as np
 import re
 import time
+import vtk
+
+
+# Ensure we mute the shitty warnings
+vtk.vtkObject.GlobalWarningDisplayOff()
+
 
 class ToolpathAnimator:
     """Toolpath Animation Class for PyVista approach"""
@@ -121,53 +127,57 @@ class ToolpathAnimator:
         self.slider = self.plotter.add_slider_widget(
             slider_callback, 
             title='Layer', 
-            rng=(0, len(self.layers)),
+            rng=(0, len(self.layers) - 1),  # Adjusted to prevent out of bounds error
             value=0,
             pointa=(0.1, 0.05, 0),
             pointb=(0.9, 0.05, 0)
         )
 
-        
         end_time = time.time()
         print(f"Time taken to setup animation: {round((end_time-start_time),2)}\n")
 
     def update_plot(self):
         """Update the plotter to show the current step."""
         self.plotter.clear_actors()  # Clear only the plot data, keeping the axes
+        self.plotter.show_axes_all()
+        self.plotter.show_grid()
 
         for layer in self.layers[:self.current_step + 1]:
             for mesh, color in self.meshes_per_layer[layer]:
                 self.plotter.add_mesh(mesh, color=color)
         
         # Update the text to show the current layer
-        self.plotter.add_text(f'Layer {self.layers[self.current_step -1]}', font_size=12, color='black')
-        self.plotter.render()        
-        self.plotter.show_axes_all()
-        self.plotter.show_grid()
-        self.plotter.show()
+        self.plotter.add_text(f'Layer {self.layers[self.current_step]}', font_size=12, color='black')
+        self.plotter.render()
 
     def animate_toolpath(self):
         """Set up the plotter and display the interactive animation."""
         print("Animating toolpath")
-        start_time = time.time()
+        print("To exit, press X on the tab then use CTRL-C\n")
         self.layers = sorted(set(self.plot_data['layer']))
         self.setup_plotter()
-        # Main loop for play/pause control
 
-        end_time = time.time()
-        print(f"Time taken to automatically render animation {round((end_time-start_time),2)}\n")
-        
+        # Use the plotter's interactive updating mode
+        self.plotter.show(interactive_update=True)
+
         try:
             while True:
                 if self.is_playing and self.current_step < len(self.layers) - 1:
                     self.current_step += 1
                     self.update_plot()
-                    time.sleep(0.1)  # Adjust this delay as needed
+                    time.sleep(0.05)  # Adjust this delay as needed
+                self.plotter.update()
+                
 
         except KeyboardInterrupt:
-            print("Keyboard interrupt detected, exitting program")
+            print("Keyboard interrupt detected, exiting program")
             pass
         
         finally:
-            print("Exitting")
-            pass
+            print("Exiting")
+            self.plotter.close()  # Ensure the plotter closes cleanly
+
+# Example usage:
+# animator = ToolpathAnimator('path/to/gcode_file.gcode')
+# animator.parse_gcode()
+# animator.animate_toolpath()
