@@ -76,6 +76,7 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         :param target_height: The height where the G-code should be injected.
         :param output_path: Path for the output file with injected G-code.
         """
+
         layers = self._height_parser()
         if not layers:
             print("Error: No layer changes found in the G-code file.")

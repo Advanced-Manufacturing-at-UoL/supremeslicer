@@ -18,7 +18,7 @@ class ToolpathAnimator:
         self.current_step = 0
         self.is_playing = False
         self.slider = None
-        self.show_travel_lines = True  # Checkbox state for travel lines
+        self.show_travel_lines = True
 
     def parse_gcode(self):
         """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
@@ -75,7 +75,7 @@ class ToolpathAnimator:
 
         self.plot_data = data
         end_time = time.time()
-        print(f"Time taken to start animation {round((end_time-start_time),2)}\n")
+        print(f"Time taken to setup animation {round((end_time-start_time),2)}\n")
 
     @staticmethod
     def create_toolpath_mesh(x, y, z, radius, resolution=10):
@@ -87,7 +87,6 @@ class ToolpathAnimator:
 
     def setup_plotter(self):
         """Setup the plotter with widgets for slider and checkbox."""
-        print("Setting up plotter\n")
         start_time = time.time()
 
         self.plotter = pv.Plotter()
@@ -144,7 +143,7 @@ class ToolpathAnimator:
         )
 
         end_time = time.time()
-        print(f"Time taken to setup animation: {round((end_time-start_time),2)}\n")
+        print(f"Time taken to start animation: {round((end_time-start_time),2)}\n")
 
     def update_plot(self):
         """Update the plotter to show the current step based on the checkbox state."""
@@ -178,7 +177,7 @@ class ToolpathAnimator:
                 if self.is_playing and self.current_step < len(self.layers) - 1:
                     self.current_step += 1
                     self.update_plot()
-                    time.sleep(0.05) # Time = 1/Frame Rate 
+                    time.sleep(round(len(self.layers)/10, 2)) # Time = 1/Frame Rate 
                 self.plotter.update()
 
         except KeyboardInterrupt:
