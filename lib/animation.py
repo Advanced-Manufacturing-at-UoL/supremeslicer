@@ -4,10 +4,8 @@ import re
 import time
 import vtk
 
-
 # Ensure we mute the shitty warnings
 vtk.vtkObject.GlobalWarningDisplayOff()
-
 
 class ToolpathAnimator:
     """Toolpath Animation Class for PyVista approach"""
@@ -20,6 +18,7 @@ class ToolpathAnimator:
         self.current_step = 0
         self.is_playing = False
         self.slider = None
+        self.show_travel_lines = True  # Checkbox state for travel lines
 
     def parse_gcode(self):
         """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
@@ -87,7 +86,7 @@ class ToolpathAnimator:
         return poly.tube(radius=radius, n_sides=resolution)
 
     def setup_plotter(self):
-        """Setup the plotter with widgets for slider."""
+        """Setup the plotter with widgets for slider and checkbox."""
         print("Setting up plotter\n")
         start_time = time.time()
 
@@ -96,8 +95,8 @@ class ToolpathAnimator:
         self.plotter.add_text('Layer 0', font_size=12, color='black')
 
         # Define colors and radii for different categories
-        categories = {
-            ('polymer', 'travel'): {'color': 'pink', 'radius': 0.1},
+        self.categories = {
+            ('polymer', 'travel'): {'color': 'blue', 'radius': 0.1},
             ('polymer', 'print'): {'color': 'red', 'radius': 0.3},
             ('ceramic', 'travel'): {'color': 'lightblue', 'radius': 0.1},
             ('ceramic', 'print'): {'color': 'blue', 'radius': 0.6}
@@ -108,7 +107,7 @@ class ToolpathAnimator:
 
         # Generate and store meshes for each layer
         for layer in self.layers:
-            for (material, move_type), properties in categories.items():
+            for (material, move_type), properties in self.categories.items():
                 mask = [(s == material and t == move_type and l == layer) 
                         for s, t, l in zip(self.plot_data['system'], self.plot_data['type'], self.plot_data['layer'])]
                 if any(mask):
@@ -133,17 +132,31 @@ class ToolpathAnimator:
             pointb=(0.9, 0.05, 0)
         )
 
+        # Add checkbox widget for travel lines
+        def checkbox_callback(value):
+            self.show_travel_lines = bool(value)
+            self.update_plot()
+
+        self.checkbox = self.plotter.add_checkbox_button_widget(
+            checkbox_callback,
+            value=self.show_travel_lines,
+            position=(0.05, 0.15)
+        )
+
         end_time = time.time()
         print(f"Time taken to setup animation: {round((end_time-start_time),2)}\n")
 
     def update_plot(self):
-        """Update the plotter to show the current step."""
+        """Update the plotter to show the current step based on the checkbox state."""
         self.plotter.clear_actors()  # Clear only the plot data, keeping the axes
         self.plotter.show_axes_all()
         self.plotter.show_grid()
 
         for layer in self.layers[:self.current_step + 1]:
             for mesh, color in self.meshes_per_layer[layer]:
+                # Adjust color if travel lines are hidden
+                if not self.show_travel_lines and 'blue' in color:
+                    continue  # Skip travel lines if checkbox is off
                 self.plotter.add_mesh(mesh, color=color)
 
         # Update the text to show the current layer
