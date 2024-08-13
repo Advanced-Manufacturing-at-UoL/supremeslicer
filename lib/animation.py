@@ -145,7 +145,7 @@ class ToolpathAnimator:
         for layer in self.layers[:self.current_step + 1]:
             for mesh, color in self.meshes_per_layer[layer]:
                 self.plotter.add_mesh(mesh, color=color)
-        
+
         # Update the text to show the current layer
         self.plotter.add_text(f'Layer {self.layers[self.current_step]}', font_size=12, color='black')
         self.plotter.render()
@@ -165,19 +165,14 @@ class ToolpathAnimator:
                 if self.is_playing and self.current_step < len(self.layers) - 1:
                     self.current_step += 1
                     self.update_plot()
-                    time.sleep(0.05)  # Adjust this delay as needed
+                    time.sleep(0.05) # Time = 1/Frame Rate 
                 self.plotter.update()
-                
 
         except KeyboardInterrupt:
             print("Keyboard interrupt detected, exiting program")
-            pass
-        
+            print("Exiting")
+            self.plotter.close()
+
         finally:
             print("Exiting")
-            self.plotter.close()  # Ensure the plotter closes cleanly
-
-# Example usage:
-# animator = ToolpathAnimator('path/to/gcode_file.gcode')
-# animator.parse_gcode()
-# animator.animate_toolpath()
+            self.plotter.close()
