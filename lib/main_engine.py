@@ -4,6 +4,7 @@ from tools.vacuum_pnp import VacuumPnP
 from lib.simulation import SimulationProcessor
 from lib.animation import ToolpathAnimator
 import os
+import yaml
 
 """Main Engine Class for running the overall program"""
 class MainEngine:
@@ -25,19 +26,28 @@ class MainEngine:
         self.slicer.slice_gcode()
         self.stop()
 
+
     def _output_folder(self):
-        output_directory = 'output/'
+        # Access the input STL and output directory from the loaded config
+        input_stl_path = self.config['input_stl']
+        output_directory = self.config['output_dir']
 
-        # Get list of files matching the pattern
-        gcode_files = [f for f in os.listdir(output_directory) if f.endswith('.gcode')]
+        # Extract the base filename (without extension) from the input STL file path
+        base_filename = os.path.splitext(os.path.basename(input_stl_path))[0]
 
-        if not gcode_files:
-            print("No .gcode files found in the input directory.")
+        # Construct the expected G-code filename
+        expected_gcode_file = f"{base_filename}.gcode"
+
+        # Full path of the expected G-code file in the output directory
+        output_gcode_path = os.path.join(output_directory, expected_gcode_file)
+
+        if not os.path.exists(output_gcode_path):
+            print(f"No corresponding G-code file found for {input_stl_path} in the output directory.")
             return
 
-        # Assuming there's only one .gcode file or you want to process the first one found
-        self.filename = os.path.join(output_directory, gcode_files[0])
+        self.filename = output_gcode_path
         print(f"Found G-code file: {self.filename}")
+
 
     def _vacuum_tool(self):
         print("Loading VacuumPnP tool\n")
