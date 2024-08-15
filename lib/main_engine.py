@@ -147,7 +147,8 @@ class MainEngine:
                 animator.animate_toolpath()
                 print("Completed plotting original toolpath.")
             elif user_in == 2:
-                print("This has not been completed yet")
+                animator.save_animation('output/render.gif')
+                #print("This has not been completed yet")
             else:
                 print("Invalid selection. Please choose 1 or 2.")
 

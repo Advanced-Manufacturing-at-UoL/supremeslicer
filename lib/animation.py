@@ -188,3 +188,53 @@ class ToolpathAnimator:
         finally:
             print("Exiting")
             self.plotter.close()
+
+    def save_animation(self, filepath, fps=10):
+        """Generate and save the animation as a GIF file."""
+        # Set up the plotter for off-screen rendering
+        self.plotter = pv.Plotter(off_screen=True)
+        self.plotter.set_background('white')
+        self.plotter.add_text('Layer 0', font_size=12, color='black')
+
+        # Open GIF recording
+        self.plotter.open_gif(filepath)
+
+        # Sort the layers
+        self.layers = sorted(set(self.plot_data['layer']))
+
+        # Generate and store meshes per layer without showing the plotter window
+        self.meshes_per_layer = {layer: [] for layer in self.layers}
+
+        # Define colors and radii for different categories
+        self.categories = {
+            ('polymer', 'travel'): {'color': 'blue', 'radius': 0.1},
+            ('polymer', 'print'): {'color': 'red', 'radius': 0.3},
+            ('ceramic', 'travel'): {'color': 'lightblue', 'radius': 0.1},
+            ('ceramic', 'print'): {'color': 'blue', 'radius': 0.6}
+        }
+
+        # Generate and store meshes for each layer
+        for layer in self.layers:
+            for (material, move_type), properties in self.categories.items():
+                mask = [(s == material and t == move_type and l == layer) 
+                        for s, t, l in zip(self.plot_data['system'], self.plot_data['type'], self.plot_data['layer'])]
+                if any(mask):
+                    x = np.array(self.plot_data['X'])[mask]
+                    y = np.array(self.plot_data['Y'])[mask]
+                    z = np.array(self.plot_data['Z'])[mask]
+                    if len(x) > 1:
+                        mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
+                        self.meshes_per_layer[layer].append((mesh, properties['color']))
+
+        # Iterate over each layer to update the plot and capture frames
+        for layer in range(len(self.layers)):
+            self.current_step = layer
+            self.update_plot()
+
+            # Write frame to the GIF
+            self.plotter.write_frame()
+
+        # Close and finalize the GIF
+        self.plotter.close()
+
+        print(f"Animation saved as {filepath}")
