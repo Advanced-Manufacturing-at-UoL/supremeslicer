@@ -227,14 +227,17 @@ class ToolpathAnimator:
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
 
         # Iterate over each layer to update the plot and capture frames
-        for layer in range(len(self.layers)):
-            self.current_step = layer
-            self.update_plot()
+        try:
+            for layer in range(len(self.layers)):
+                self.current_step = layer
+                self.update_plot()
 
-            # Write frame to the GIF
-            self.plotter.write_frame()
+                # Write frame to the GIF
+                self.plotter.write_frame()
+            print(f"Animation saved as {filepath}")
 
-        # Close and finalize the GIF
-        self.plotter.close()
+        except KeyboardInterrupt:
+            self.plotter.close()
 
-        print(f"Animation saved as {filepath}")
+        finally:
+            self.plotter.close()
