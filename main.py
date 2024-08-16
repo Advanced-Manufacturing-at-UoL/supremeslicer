@@ -16,10 +16,18 @@ pralishbusiness@gmail.com
 
 # Import Main Engine Class to run the process thread
 from lib.main_engine import MainEngine
+import traceback
+import logging
+
+logging.basicConfig(filename = 'error_log.txt', level=logging.ERROR)
 
 def main():
-    main_client = MainEngine()
-    main_client.cli()
+    try:
+        main_client = MainEngine()
+        main_client.cli()
+    except Exception as e:
+        logging.error("An error occured", exc_info=True)
+
 
 if __name__ == "__main__":
     main()
