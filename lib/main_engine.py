@@ -21,6 +21,30 @@ class MainEngine:
     def stop(self):
         Utils.stop_timer(self.start_time)
 
+    def _output_doc(self):
+        Utils.sleep(0.5)
+        print("This tool was made by Pralish Satyal and can slice an STL, converting it to GCODE\n")
+        Utils.sleep(0.5)
+        print("Unlike other slicers, this one can add custom G-Code for custom tools")
+        Utils.sleep(0.5)
+        print("as well as displaying the overall custom toolpaths per each tool.")
+        Utils.sleep(1.5)
+
+        print("Custom tools include the general extruder, the VacuumPnP tool, the screwdriver and the gripper.")
+        print("In this version, only the extruder and Vacuum Tool work\n")
+        Utils.sleep(1.5)
+
+        print("Prior to running the code, ensure you have read the README and have selected the correct settings")
+        Utils.sleep(0.5)
+        print("within the configs directory and the tools directory")
+        Utils.sleep(0.5)
+        print("Use the simulation tool to see each layer better (with the toolpath)")
+        Utils.sleep(0.5)
+        print("Use the animation tool quickly obtain a render\n")
+        print("Good luck and enjoy the software!\n")
+        Utils.sleep(1)
+
+
     def _run_slicer(self):
         self.start()
         self.slicer.slice_gcode()
@@ -137,18 +161,21 @@ class MainEngine:
             # Retrieve the output folder and file
             self._output_folder()
 
-            # Initialise animator
-            animator = ToolpathAnimator(self.filename)
-
             if user_in == 1:
                 print("Plotting Original toolpath")
+                # Initialise animator
+                animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 animator.animate_toolpath()
             elif user_in == 2:
                 print("Saving final Layer")
+                # Initialise animator
+                animator = ToolpathAnimator(self.filename)
                 animator.save_final_layer('output/final_layer.gif')
             elif user_in == 3:
                 print("Saving entire animation. This will take a few minutes.")
+                # Initialise animator
+                animator = ToolpathAnimator(self.filename)
                 animator.save_animation('output/render.gif')
             else:
                 print("Invalid selection. Please choose 1 or 2.")
@@ -177,6 +204,7 @@ class MainEngine:
         print("added a config.yaml file under the configs repository")
 
         while True:
+            print("0. Show documentation")
             print("1. Read Config file")
             print("2. Slice a g-code file")
             print("3. Access tools")
@@ -189,8 +217,10 @@ class MainEngine:
             except ValueError:
                 print("Invalid input. Please enter a number.")
                 continue
-
-            if user_in == 1:
+            
+            if user_in == 0:
+                self._output_doc()
+            elif user_in == 1:
                 self._read_config()
             elif user_in == 2:
                 self._run_slicer()

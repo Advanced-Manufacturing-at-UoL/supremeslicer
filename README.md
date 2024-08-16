@@ -67,7 +67,7 @@
 - Create or update the configuration files for each tool (e.g., `vacuum_config.yaml`, `screwdriver_config.yaml`, `gripper_config.yaml`) to specify the parameters for G-code generation.
 - Update the paths in the `main.py` file to match your setup.
 
-### Usage
+### Usage as Python Script
 
 1. Run the Terminal Client:
     ```bash
@@ -75,6 +75,15 @@
     ```
 
 2. Follow the prompts to choose the tool, generate and inject G-code, or simulate the overall G-code.
+
+### Build as Main
+
+1. Build the program through using pyinstaller with the spec:
+    ```bash
+    pyinstaller main.sepc
+    ```
+
+2. Run the EXE
 
 ### Example
 
