@@ -26,7 +26,6 @@ class MainEngine:
         self.slicer.slice_gcode()
         self.stop()
 
-
     def _output_folder(self):
         # Access the input STL and output directory from the loaded config
         input_stl_path = self.config['input_stl']
@@ -47,7 +46,6 @@ class MainEngine:
 
         self.filename = output_gcode_path
         print(f"Found G-code file: {self.filename}")
-
 
     def _vacuum_tool(self):
         print("Loading VacuumPnP tool\n")
@@ -141,15 +139,16 @@ class MainEngine:
 
             # Initialise animator
             animator = ToolpathAnimator(self.filename)
-            
-            animator.parse_gcode()
-            
+
             if user_in == 1:
+                print("Plotting Original toolpath")
+                animator.parse_gcode()
                 animator.animate_toolpath()
-                print("Completed plotting original toolpath.")
             elif user_in == 2:
+                print("Saving final Layer")
                 animator.save_final_layer('output/final_layer.gif')
             elif user_in == 3:
+                print("Saving entire animation. This will take a few minutes.")
                 animator.save_animation('output/render.gif')
             else:
                 print("Invalid selection. Please choose 1 or 2.")
