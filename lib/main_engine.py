@@ -132,7 +132,8 @@ class MainEngine:
         """Runs the simulation for plotting the toolpath."""
         try:
             print("1. Output rendered simulation")
-            print("2. Output render to file")
+            print("2. Output final frame to file")
+            print("3. Output entire animation as GIF")
             user_in = int(input("Please choose an option\n"))
 
             # Retrieve the output folder and file
