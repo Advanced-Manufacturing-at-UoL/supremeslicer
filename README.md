@@ -89,10 +89,17 @@
 
 1. **Build the Program with PyInstaller**:
     ```bash
-    python install.py
+    pyinstaller --onefile main.py
     ```
-  
-2. **Run the Executable**:
+2. **Edit the main spec**:
+   - Add the hidden import and the lib folder and tools folder
+ 
+3. **Rebuild with the main spec file**:
+    ```bash
+    pyinstaller main.spec
+    ```
+    - When prompted, press y to overwrite the build directory.
+4. **Run the Executable**:
    - Navigate to the `dist` directory.
    - Run the EXE file to start the application.
 
