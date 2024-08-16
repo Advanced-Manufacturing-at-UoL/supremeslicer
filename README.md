@@ -2,40 +2,40 @@
 
 ## Overview
 
-**SupremeSlicer** is a project designed to extend the capabilities of SuperSlicer by integrating additional functions for generating G-code and toolpaths for specialized tools used in the AMPI Machine. The project aims to bridge the usability of SuperSlicer with enhanced features that support various tools, enabling more advanced and customized 3D printing operations.
+**SupremeSlicer** extends the capabilities of SuperSlicer by integrating advanced features for generating G-code and toolpaths tailored for specialized tools used in the AMPI Machine. The project enhances SuperSlicer’s usability by offering additional functionalities for various tools, enabling more advanced and customized 3D printing operations.
 
 ## Features
 
 - **Terminal Client for SuperSlicer (Native Slicer)**:
-  - A terminal-based client that allows for interaction with SuperSlicer, providing additional functionality and control over the slicing process.
+  - A terminal-based interface for interacting with SuperSlicer, providing advanced control and functionality over the slicing process.
 
 - **G-code Injection per Tool**:
-  - **VacuumSuction Tool**: Injects custom G-code for vacuum suction operations.
+  - **VacuumSuction Tool**: Injects custom G-code to manage vacuum suction operations.
   - **Screwdriver Tool**: Injects custom G-code for screwdriver operations.
   - **Gripper Tool**: Injects custom G-code for gripper operations.
 
 - **Overall G-code Simulation Tool**:
-  - Simulates the generated G-code to visualize and verify toolpaths before actual printing.
+  - Visualizes and verifies generated G-code to ensure accurate toolpaths before actual printing.
 
 ## Tools
 
 1. **VacuumSuction Tool**
-   - **Description**: Provides functionality to control a vacuum suction tool during printing.
+   - **Description**: Controls a vacuum suction tool during printing.
    - **Features**:
-     - Configurable parameters for suction state and tool movement.
-     - G-code generation and injection for vacuum operations.
+     - Configurable suction state and tool movement parameters.
+     - Custom G-code generation for vacuum operations.
 
 2. **Screwdriver Tool**
-   - **Description**: Manages the operations of a screwdriver tool used in conjunction with the 3D printer.
+   - **Description**: Manages operations for a screwdriver tool used with the 3D printer.
    - **Features**:
      - Custom G-code generation for screwdriver actions.
      - Integration with SuperSlicer for precise tool control.
 
 3. **Gripper Tool**
-   - **Description**: Controls a gripper tool for handling objects during the printing process.
+   - **Description**: Controls a gripper tool for handling objects during printing.
    - **Features**:
      - Adjustable parameters for gripper actions.
-     - G-code injection to coordinate gripper movements.
+     - Custom G-code injection for coordinating gripper movements.
 
 ## Getting Started
 
@@ -47,56 +47,69 @@
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the Repository**:
     ```bash
-    git clone https://github.com/PralishSatyal/supremeslicer
+    git clone https://github.com/PralishSatyal/supremeslicer.git
     ```
 
-2. Navigate to the project directory:
+2. **Navigate to the Project Directory**:
     ```bash
     cd supremeslicer
     ```
 
-3. Install required Python packages:
+3. **Install Required Python Packages**:
     ```bash
     pip install -r requirements.txt
     ```
 
 ### Configuration
 
-- Create or update the configuration files for each tool (e.g., `vacuum_config.yaml`, `screwdriver_config.yaml`, `gripper_config.yaml`) to specify the parameters for G-code generation.
+- Create or update configuration files for each tool:
+  - `vacuum_config.yaml`
+  - `screwdriver_config.yaml`
+  - `gripper_config.yaml`
+  
+  Specify the parameters for G-code generation in these files.
+
 - Update the paths in the `main.py` file to match your setup.
 
-### Usage as Python Script
+### Usage as a Python Script
 
-1. Run the Terminal Client:
+1. **Run the Terminal Client**:
     ```bash
     python main.py
     ```
 
-2. Follow the prompts to choose the tool, generate and inject G-code, or simulate the overall G-code.
+2. **Follow the Prompts**:
+   - Choose the tool.
+   - Generate and inject G-code.
+   - Simulate the overall G-code.
 
-### Build as Main
+### Building an Executable
 
-1. Build the program through using pyinstaller with the spec:
+1. **Build the Program with PyInstaller**:
     ```bash
-    pyinstaller main.sepc
+    python install.py
     ```
+  
+2. **Run the Executable**:
+   - Navigate to the `dist` directory.
+   - Run the EXE file to start the application.
 
-2. Run the EXE
-
-### Example
+### Example Usage
 
 To inject G-code for the VacuumSuction Tool:
 
-1. Select the option to generate and inject G-code.
-2. Enter the height where the G-code should be injected.
-3. Provide the output path where the modified G-code will be saved.
+1. **Select the Option**: Choose to generate and inject G-code.
+2. **Specify Parameters**: Enter the height where the G-code should be injected.
+3. **Provide Output Path**: Specify where the modified G-code will be saved.
 
 ## Contributing
 
-Contributions to **SupremeSlicer** are welcome. Please fork the repository and submit a pull request with your changes. Ensure that your changes are well-documented and tested.
+Contributions to **SupremeSlicer** are welcome! Please fork the repository and submit a pull request with your changes. Ensure that your contributions are well-documented and tested.
 
 ## Contact
 
-For any questions or support, please reach out to [pralishbusiness@gmail.com](mailto:pralishbusiness@gmail.com). Created by Pralish Satyal 22/07/2024. 
+For questions or support, reach out to [pralishbusiness@gmail.com](mailto:pralishbusiness@gmail.com).
+
+Created by Pralish Satyal, 22/07/2024.
