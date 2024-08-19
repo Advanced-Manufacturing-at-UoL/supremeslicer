@@ -9,7 +9,10 @@ class Utils:
     @staticmethod
     def read_yaml(file_path):
         try:
-            with open(file_path, 'r') as file:
+
+            absolute_path = Utils.get_resource_path(file_path)
+
+            with open(absolute_path, 'r') as file:
                 content = file.read()
 
                 # Replace single backslashes with double backslashes
