@@ -3,6 +3,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
+from lib.utils import Utils
 import re
 import time
 import yaml
@@ -10,7 +11,7 @@ import yaml
 class SimulationProcessor:
     def __init__(self, filename):
         """Initialize class"""
-        self.config_file = 'configs/simulation.yaml'
+        self.config_file = Utils.get_resource_path('configs/simulation.yaml')
         self.filename = filename
         self.config = self.load_config()
         self.gcode = self.read_gcode()
