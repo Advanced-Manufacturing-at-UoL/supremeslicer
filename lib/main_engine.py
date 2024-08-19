@@ -10,7 +10,7 @@ import yaml
 class MainEngine:
     def __init__(self):
         self.start_time = None
-        self.config = Utils.read_yaml('configs/config.yaml')
+        self.config = Utils.read_yaml(r'configs\config.yaml')
         self.slicer = SuperSlicer(self.config)    
         self.vacuum_pnp_tool = None
         self.filename = None
@@ -171,11 +171,13 @@ class MainEngine:
                 print("Saving final Layer")
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
+                animator.parse_gcode()
                 animator.save_final_layer('output/final_layer.gif')
             elif user_in == 3:
                 print("Saving entire animation. This will take a few minutes.")
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
+                animator.parse_gcode()
                 animator.save_animation('output/render.gif')
             else:
                 print("Invalid selection. Please choose 1 or 2.")
@@ -192,7 +194,7 @@ class MainEngine:
     def _read_config(self):
         Utils.sleep(1)
         self.start()
-        Utils.print_yaml('configs/config.yaml')
+        Utils.print_yaml(r'configs\config.yaml')
         self.stop()
 
     def cli(self):
