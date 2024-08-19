@@ -102,6 +102,7 @@ class MainEngine:
             output_path = 'output'
             self.vacuum_pnp_tool.inject_gcode_at_height(height, output_path)
         elif user_in == 2:
+            self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.print_injected_gcode()
         else:
             print("Invalid option. Please select 1 or 2.")

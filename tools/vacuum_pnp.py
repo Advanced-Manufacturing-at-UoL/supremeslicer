@@ -135,10 +135,27 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 
     def print_injected_gcode(self):
         """
-        Prints the generated and injected G-code to the screen.
+        Scans the G-code file for the injected G-code comments and prints the lines between them.
         """
-        if self.injected_gcode:
-            print("Injected G-code:\n")
-            print(self.injected_gcode)
-        else:
-            print("No injected G-code to print. Please generate G-code first.")
+        if not self.gcode_content:
+            print("Error: G-code content is empty. Please read the G-code file first.")
+            return
+
+        # Define the start and end markers for the injected G-code
+        start_marker = "; VacuumPnP TOOL G CODE INJECTION START"
+        end_marker = "; VacuumPnP TOOL G CODE INJECTION END"
+
+        # Search for the markers in the G-code content
+        start_index = self.gcode_content.find(start_marker)
+        end_index = self.gcode_content.find(end_marker)
+
+        if start_index == -1 or end_index == -1:
+            print("No injected G-code found in the G-code file.")
+            return
+
+        # Extract the injected G-code section
+        start_index += len(start_marker)  # Move past the start marker
+        injected_gcode_section = self.gcode_content[start_index:end_index].strip()
+
+        # Print the injected G-code section
+        print(f"\nInjected G-code:\n{start_marker}\n{injected_gcode_section}\n{end_marker}\n")
