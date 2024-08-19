@@ -246,9 +246,6 @@ class SimulationProcessor:
             f_ecoords = filter_close_coordinates(e_coords_list)
             f_travel_coords = filter_close_coordinates(travel_coords_list)
             print("~~~~~~~~~~~~Coordinate Elements Filtered~~~~~~~~~~~~")
-            # print(f_coords[0])
-            # print(f_ecoords[0])
-            # print(f_travel_coords[0])
             print("Type: Coordinates, E_coords, Travel_coords")
             print(type(coordinates), type(e_coords_list), type(travel_coords_list))
             print("Type of filtered: Coordinates, E_coords, Travel_coords")
@@ -292,6 +289,7 @@ class SimulationProcessor:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
             self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
+            print("We are gonna try parse the vacuum coordiantes here")
             
             # print("Now we're gonna try filter the vacuum coordinates")
             # self.filtered_vacuum_coords = filter_close_coordinates(vacuum_coords)
@@ -465,7 +463,7 @@ class SimulationProcessor:
             print("Error within get_vacuum_coordinates")
             print(f"Error occured {e}")
 
-def filter_close_coordinates(coordinates, threshold=0.1):
+def filter_close_coordinates(coordinates, threshold=0):
     """Filter out coordinates that are too close to each other based on the threshold."""
     try:
         if not coordinates:
