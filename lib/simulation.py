@@ -152,7 +152,7 @@ class SimulationProcessor:
                         line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
                         self.lines.append(line)
 
-        if self.show_travel:
+        if hasattr(self, 'travel_coords_np') and self.show_travel:
             travel_lines = self.travel_coords_np[:num]
             if len(travel_lines):
                 x_vals, y_vals, z_vals = zip(*travel_lines)
@@ -161,7 +161,7 @@ class SimulationProcessor:
                     self.travel_line.set_3d_properties(z_vals)
                 else:
                     self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
-
+        
         if self.slider.val != num:
             self.slider.set_val(num)
 
@@ -254,9 +254,7 @@ class SimulationProcessor:
             print(f"Length coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
             print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
             print(f"Length e coords:{len(e_coords_list)}\nlength filtered e coords: {len(f_ecoords)}\n")
-
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n")
-
 
             common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
             travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
@@ -276,10 +274,6 @@ class SimulationProcessor:
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
             self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
 
-            # self.segments = self.split_into_segments(coordinates)
-            # num_frames = len(self.segments)
-            # self.interval = interval
-
             if num_frames == 0:
                 print("No segments found in the G-code. Cannot create animation.")
                 return
@@ -289,10 +283,6 @@ class SimulationProcessor:
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
             self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
-            print("We are gonna try parse the vacuum coordiantes here")
-            
-            # print("Now we're gonna try filter the vacuum coordinates")
-            # self.filtered_vacuum_coords = filter_close_coordinates(vacuum_coords)
 
             # Set up the plot
             self.fig = plt.figure()
@@ -339,6 +329,9 @@ class SimulationProcessor:
             self.segments = [vacuum_coords]  # Treat the entire vacuum path as a single segment
             num_frames = len(self.segments[0])  # Number of frames is the length of the vacuum path
             self.interval = interval
+
+            print("Within Vaccuum animation code")
+            print(num_frames)
 
             if num_frames == 0:
                 print("No segments found in the vacuum G-code. Cannot create animation.")
