@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('lib', 'lib'), ('tools', 'tools')],
+    datas=[('lib', 'lib'), ('tools', 'tools'), ('configs','configs'), ('tools', 'tools'), ('input', 'input'), ('output', 'output')],
     hiddenimports=['pkg_resources.py2_warn', 'jaraco.text', 'jaraco.context'],
     hookspath=[],
     hooksconfig={},
