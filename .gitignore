@@ -1,4 +1,4 @@
-origin/simulation-test/tools/__pycache__
-origin/simulation-test/dist
-origin/simulation-test/build
-origin/simulation-test/lib/__pycache__
+/dist
+/build
+/lib/__pycache__
+/tools/__pycache__
