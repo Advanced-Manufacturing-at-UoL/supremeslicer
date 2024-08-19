@@ -1,8 +1,4 @@
-tools\__pycache__\vacuum_pnp.cpython-38.pyc
-lib\__pycache__\main_engine.cpython-38.pyc
-lib\__pycache__\simulation.cpython-38.pyc
-lib\__pycache__\super_slicer.cpython-38.pyc
-lib\__pycache__\utils.cpython-38.pyc
-*.pyc
-lib/__pycache__/simulation.cpython-38.pyc
-lib/__pycache__/main_engine.cpython-38.pyc
+/dist
+/build
+/lib/__pycache__
+/tools/__pycache__
