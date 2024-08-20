@@ -73,9 +73,9 @@ class MainEngine:
 
     def _vacuum_tool(self):
         print("Loading VacuumPnP tool\n")
-        config_file = 'tools/vacuum_config.yaml'
+        config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
 
-        output_directory = 'output/'
+        output_directory = Utils.get_resource_path('output/')
 
         # Get list of files matching the pattern
         gcode_files = [f for f in os.listdir(output_directory) if f.endswith('.gcode')]
@@ -173,13 +173,15 @@ class MainEngine:
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
-                animator.save_final_layer('output/final_layer.gif')
+                file_location = Utils.get_resource_path('output/final_layer.gif')
+                animator.save_final_layer(file_location)
             elif user_in == 3:
                 print("Saving entire animation. This will take a few minutes.")
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
-                animator.save_animation('output/render.gif')
+                file_location = Utils.get_resource_path('output/render.gif')
+                animator.save_animation(file_location)
             else:
                 print("Invalid selection. Please choose 1 or 2.")
 
