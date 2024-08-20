@@ -10,7 +10,7 @@ class VacuumPnP:
         :param filename: Path to the G-code file.
         :param config_file: Path to the YAML configuration file.
         """
-        self.filename = filename
+        self.filename = Utils.get_resource_path(filename)
         self.config_file = config_file
         self.gcode_content = None
         self.injected_gcode = None
@@ -76,7 +76,8 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         :param target_height: The height where the G-code should be injected.
         :param output_path: Path for the output file with injected G-code.
         """
-
+        output_path = Utils.get_resource_path(output_path)
+        
         layers = self._height_parser()
         if not layers:
             print("Error: No layer changes found in the G-code file.")
@@ -105,7 +106,7 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         lines.insert(injection_point + 1, '\n'.join(custom_gcode_lines) + '\n')
 
         # Define the output path
-        output_file = os.path.join(output_path, os.path.basename(self.filename))
+        output_file = Utils.get_resource_path(os.path.join(output_path, os.path.basename(self.filename)))
         
         # Write the modified G-code to the output file
         with open(output_file, 'w') as f:

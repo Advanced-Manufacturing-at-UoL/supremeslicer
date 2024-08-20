@@ -4,10 +4,10 @@
 pip install -r requirements.txt
 
 :: Run PyInstaller to build the executable
-::pyinstaller main.spec
+pyinstaller main.spec
 
-:: Clean the build
-pyinstaller --clean main.spec 
+:: If you have built before, you may need to clean the build rather than building it itself
+::pyinstaller --clean main.spec 
 
 @echo Done!
 pause

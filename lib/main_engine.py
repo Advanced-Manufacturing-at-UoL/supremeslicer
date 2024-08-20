@@ -85,7 +85,7 @@ class MainEngine:
             return
 
         # Assuming there's only one .gcode file or you want to process the first one found
-        self.filename = os.path.join(output_directory, gcode_files[0])
+        #self.filename = os.path.join(output_directory, gcode_files[0])
         print(f"Found G-code file: {self.filename}")
 
         self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
@@ -113,6 +113,9 @@ class MainEngine:
         print("2. Screwdriver")
         print("3. Gripper")
         print("4. Exit\n")
+        
+        # Get the folder and file path
+        self._output_folder()
 
         user_in = int(input())
         if user_in == 1:
