@@ -23,7 +23,7 @@ class MainEngine:
 
     def _output_doc(self):
         Utils.sleep(0.5)
-        print("This tool was made by Pralish Satyal and can slice an STL, converting it to GCODE\n")
+        print("\nThis tool was made by Pralish Satyal and can slice an STL, converting it to GCODE\n")
         Utils.sleep(0.5)
         print("Unlike other slicers, this one can add custom G-Code for custom tools")
         Utils.sleep(0.5)
@@ -49,6 +49,7 @@ class MainEngine:
         self.start()
         self.slicer.slice_gcode()
         self.stop()
+        print("\n")
 
     def _output_folder(self):
         # Access the input STL and output directory from the loaded config
@@ -70,19 +71,19 @@ class MainEngine:
 
         self.filename = output_gcode_path
         self.output_directory = output_directory
-        print(f"Found G-code file: {self.filename}")
+        #print(f"Found G-code file: {self.filename}")
 
     def _vacuum_tool(self):
         print("Loading VacuumPnP tool\n")
         config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
 
         output_directory = self.config['output_dir']
-        print(f"Thinking that the output directory is:{output_directory}")
+        print(f"Output directory is:{output_directory}")
         print(f"Found G-code file: {self.filename}")
 
         self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
 
-        print("Would you like to...")
+        print("\nWould you like to...")
         print("1. Generate and inject Gcode")
         print("2. Read Gcode file output")
 
@@ -113,7 +114,7 @@ class MainEngine:
         if user_in == 1:
             self._vacuum_tool()
         else:
-            print("Tool not programmed yet. Sorry!")
+            print("\nTool not programmed yet. Sorry!\n")
 
     def _run_simulation(self):
         """Runs the simulation for plotting the toolpath."""
@@ -130,12 +131,12 @@ class MainEngine:
 
             if user_in == 1:
                 simulation_processor.plot_original_toolpath()
-                print("Completed plotting original toolpath.")
+                print("Completed plotting original toolpath.\n")
             elif user_in == 2:
                 simulation_processor.plot_vacuum_toolpath()
-                print("Completed plotting vacuum toolpath.")
+                print("Completed plotting vacuum toolpath.\n")
             else:
-                print("Invalid selection. Please choose 1 or 2.")
+                print("Invalid selection. Please choose 1 or 2.\n")
 
         except ValueError as ve:
             print(f"Value error: {ve}")
@@ -164,14 +165,14 @@ class MainEngine:
                 animator.parse_gcode()
                 animator.animate_toolpath()
             elif user_in == 2:
-                print("Saving final Layer")
+                print("\nSaving final Layer")
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 file_location = self.output_directory + '/final_layer.gif'
                 animator.save_final_layer(file_location)
             elif user_in == 3:
-                print("Saving entire animation. This will take a few minutes.")
+                print("\nSaving entire animation. This will take a few minutes.")
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
@@ -194,6 +195,7 @@ class MainEngine:
         self.start()
         Utils.print_yaml(r'configs\config.yaml')
         self.stop()
+        print("\n")
 
     def cli(self):
         """

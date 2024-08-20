@@ -45,7 +45,7 @@ class VacuumPnP:
         try:
             with open(self.filename, 'r') as file:
                 self.gcode_content = file.read()
-                print("G-code file read successfully.")
+                print("\nG-code file read successfully.")
         except FileNotFoundError:
             print(f"Error: G-code file not found: {self.filename}")
         except IOError as e:
@@ -113,7 +113,7 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         with open(output_file, 'w') as f:
             f.writelines(lines)
 
-        print(f"G-code injected and saved to {output_file}")
+        print(f"G-code injected and saved to {output_file}\n")
 
     def _height_parser(self):
         """

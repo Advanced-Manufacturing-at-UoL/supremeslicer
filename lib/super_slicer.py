@@ -21,7 +21,7 @@ class SuperSlicer:
 
         try:
             subprocess.run(command, check=True)
-            print("Slicing completed successfully.\n")
+            print("\nSlicing completed successfully.")
             print(f"Please check {self.output_dir}\n")
         except subprocess.CalledProcessError as e:
             print(f"Error occurred: {e}")

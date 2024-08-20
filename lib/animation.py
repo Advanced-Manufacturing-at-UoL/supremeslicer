@@ -237,7 +237,7 @@ class ToolpathAnimator:
         # Close and finalize the GIF
         self.plotter.close()
 
-        print(f"Animation saved as {filepath}")
+        print(f"Animation saved as {filepath}\n")
 
     def save_final_layer(self, filepath, fps=10):
         """Generate and save the animation as a GIF file."""
@@ -285,4 +285,4 @@ class ToolpathAnimator:
         # Close and finalize the GIF
         self.plotter.close()
 
-        print(f"Animation saved as {filepath}")
+        print(f"Animation saved as {filepath}\n")
