@@ -193,6 +193,7 @@ class MainEngine:
     def _read_config(self):
         Utils.sleep(1)
         self.start()
+        print("\n")
         Utils.print_yaml(r'configs\config.yaml')
         self.stop()
         print("\n")

@@ -34,7 +34,6 @@ class Utils:
         """
         yaml_data = Utils.read_yaml(file_path)
         Utils._print_yaml_recursive(yaml_data, level = 0)
-        print("\n")
 
     def _print_yaml_recursive(yaml_data, level=0):
         """
