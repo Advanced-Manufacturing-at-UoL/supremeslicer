@@ -75,17 +75,8 @@ class MainEngine:
         print("Loading VacuumPnP tool\n")
         config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
 
-        output_directory = Utils.get_resource_path('output/')
-
-        # Get list of files matching the pattern
-        gcode_files = [f for f in os.listdir(output_directory) if f.endswith('.gcode')]
-
-        if not gcode_files:
-            print("No .gcode files found in the input directory.")
-            return
-
-        # Assuming there's only one .gcode file or you want to process the first one found
-        #self.filename = os.path.join(output_directory, gcode_files[0])
+        output_directory = self.config['output_dir']
+        print(f"Thinking that the output directory is:{output_directory}")
         print(f"Found G-code file: {self.filename}")
 
         self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
@@ -99,7 +90,7 @@ class MainEngine:
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.generate_gcode()
             height = float(input("Enter the height to inject the G-code: "))
-            output_path = 'output'
+            output_path = output_directory
             self.vacuum_pnp_tool.inject_gcode_at_height(height, output_path)
         elif user_in == 2:
             self.vacuum_pnp_tool.read_gcode()

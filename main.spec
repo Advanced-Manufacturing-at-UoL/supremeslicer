@@ -1,5 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+import sys
+
+def set_working_directory():
+    # Set the working directory to the parent of the executable location
+    os.chdir(os.path.dirname(sys.executable))
 
 a = Analysis(
     ['main.py'],
@@ -52,3 +58,6 @@ coll = COLLECT(
     upx_exclude=[],
     name='main',
 )
+
+# Add this line to change the working directory
+exe.run_before = set_working_directory
