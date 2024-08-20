@@ -4,10 +4,10 @@
 pip install -r requirements.txt
 
 :: Run PyInstaller to build the executable
-pyinstaller main.spec
+::pyinstaller main.spec
 
-:: Move the generated executable to the root directory
-move /Y dist\main\main.exe .
+:: Clean the build
+pyinstaller --clean main.spec 
 
 @echo Done!
 pause
