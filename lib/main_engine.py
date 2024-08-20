@@ -69,6 +69,7 @@ class MainEngine:
             return
 
         self.filename = output_gcode_path
+        self.output_directory = output_directory
         print(f"Found G-code file: {self.filename}")
 
     def _vacuum_tool(self):
@@ -167,14 +168,14 @@ class MainEngine:
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
-                file_location = Utils.get_resource_path('output/final_layer.gif')
+                file_location = self.output_directory + '/final_layer.gif'
                 animator.save_final_layer(file_location)
             elif user_in == 3:
                 print("Saving entire animation. This will take a few minutes.")
                 # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
-                file_location = Utils.get_resource_path('output/render.gif')
+                file_location = self.output_directory +'/render.gif'
                 animator.save_animation(file_location)
             else:
                 print("Invalid selection. Please choose 1 or 2.")
