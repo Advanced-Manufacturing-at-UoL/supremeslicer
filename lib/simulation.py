@@ -121,14 +121,18 @@ class SimulationProcessor:
 
         return segments
 
-
-    def update_plot(self, num):
+    def update_vacuum(self, num):
         """Update the plot with each new coordinate."""
+
+        print("Starting the update_plot function")
+
         if not self.animating:  # Avoid updating if not animating
             return
 
         if not hasattr(self, 'lines'):
             self.lines = []
+
+        print("Gonna clear the workspace")
 
         # Clear existing lines and mesh
         for line in self.lines:
@@ -138,12 +142,38 @@ class SimulationProcessor:
             self.mesh.remove()
             self.mesh = None
 
+        print("Checking if mesh or not to display lines")
         if self.is_mesh_displayed:  # Display mesh when paused
+            print("Displaying mesh")
             x_vals, y_vals, z_vals = zip(*self.coords_np[:num])
             self.mesh = self.ax.plot_trisurf(x_vals, y_vals, z_vals, color='b', alpha=0.3)
-        else:  # Display lines during animation
+
+        elif hasattr(self, 'vacuum_coords_np') and self.show_travel:  # Display vacuum coordinates
+            print("Within vacuum coordinates update method")
+            vacuum_lines = self.vacuum_coords_np[:num]
+            if len(vacuum_lines) > 0:
+                x_vals, y_vals, z_vals = zip(*vacuum_lines)
+                if hasattr(self, 'vacuum_line') and self.vacuum_line:
+                    self.vacuum_line.set_data(x_vals, y_vals)
+                    self.vacuum_line.set_3d_properties(z_vals)
+                else:
+                    self.vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
+
+        elif hasattr(self, 'travel_coords_np') and self.show_travel:  # Display travel coordinates
+            print("Travel lines so we're plotting travel")
+            travel_lines = self.travel_coords_np[:num]
+            if len(travel_lines) > 0:
+                x_vals, y_vals, z_vals = zip(*travel_lines)
+                if hasattr(self, 'travel_line') and self.travel_line:
+                    self.travel_line.set_data(x_vals, y_vals)
+                    self.travel_line.set_3d_properties(z_vals)
+                else:
+                    self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
+
+        else:  # Display general path coordinates
+            print("Plotting general line data")
             for i, segment in enumerate(self.segments[:num]):
-                if segment:
+                if len(segment) > 0:
                     x_vals, y_vals, z_vals = zip(*segment)
                     if i < len(self.lines):
                         line = self.lines[i]
@@ -153,15 +183,76 @@ class SimulationProcessor:
                         line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
                         self.lines.append(line)
 
+        if self.slider.val != num:
+            self.slider.set_val(num)
+
+        self.fig.canvas.draw_idle()
+
+    def update_plot(self, num):
+        """Update the plot with each new coordinate."""
+
+        print("Starting the update_plot function")
+
+        if not self.animating:  # Avoid updating if not animating
+            return
+
+        if not hasattr(self, 'lines'):
+            self.lines = []
+
+        print("Gonna clear the workspace")
+
+        # Clear existing lines and mesh
+        for line in self.lines:
+            line.set_data([], [])
+            line.set_3d_properties([])
+        if hasattr(self, 'mesh') and self.mesh:
+            self.mesh.remove()
+            self.mesh = None
+
+        print("Checking if mesh if not display lines")
+        if self.is_mesh_displayed:  # Display mesh when paused
+            print("Displaying mesh")
+            x_vals, y_vals, z_vals = zip(*self.coords_np[:num])
+            self.mesh = self.ax.plot_trisurf(x_vals, y_vals, z_vals, color='b', alpha=0.3)
+        else:  # Display lines during animation
+            print("Plotting general line data")
+            for i, segment in enumerate(self.segments[:num]):
+                print("Holy shit im in the for loop")
+                if len(segment) > 0:
+                    print("Checking legnth of segment")
+                    x_vals, y_vals, z_vals = zip(*segment)
+                    if i < len(self.lines):
+                        line = self.lines[i]
+                        line.set_data(x_vals, y_vals)
+                        line.set_3d_properties(z_vals)
+                    else:
+                        line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
+                        self.lines.append(line)
+
+        print("Checking if data has travel coords np")
         if hasattr(self, 'travel_coords_np') and self.show_travel:
+            print("Travel lines so we're plotting travel")
             travel_lines = self.travel_coords_np[:num]
-            if len(travel_lines):
+            if len(travel_lines) > 0:
                 x_vals, y_vals, z_vals = zip(*travel_lines)
                 if hasattr(self, 'travel_line') and self.travel_line:
                     self.travel_line.set_data(x_vals, y_vals)
                     self.travel_line.set_3d_properties(z_vals)
                 else:
                     self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
+
+        print("Checking if data has vacuum_coords np")
+        if hasattr(self, 'vacuum_coords_np') and self.show_travel:
+            print("Within vacuum coordinates update method")
+            vacuum_lines = self.vacuum_coords_np[:num]
+            print(vacuum_lines)
+            if len(vacuum_lines) > 0:
+                x_vals, y_vals, z_vals = zip(*vacuum_lines)
+                if hasattr(self, 'vacuum_coords_np') and self.vacuum_line:
+                    self.vacuum_line.set_data(x_vals, y_vals)
+                    self.vacuum_line.set_3d_properties(z_vals)
+                else:
+                    self.vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
         
         if self.slider.val != num:
             self.slider.set_val(num)
@@ -266,6 +357,7 @@ class SimulationProcessor:
             self.travel_coords_np = travel_coords
             self.coords_np = coords
 
+
             self.segments = self.split_into_segments(f_coords)
             num_frames = len(self.segments)
             self.interval = interval
@@ -322,13 +414,20 @@ class SimulationProcessor:
             print("Within plot_toolpath_animation")
             print(f"Error occured {e}")
 
-    def plot_vacuum_animation(self, vacuum_coords, interval):
+    def plot_vacuum_animation(self, vacuum_start_line, vacuum_end_line, interval):
         """Animate the vacuum toolpath given a list of (x, y, z) coordinates."""
 
         try:
-            self.vacuum_coords_np = np.array(vacuum_coords)
-            self.segments = [vacuum_coords]  # Treat the entire vacuum path as a single segment
-            num_frames = len(self.segments[0])  # Number of frames is the length of the vacuum path
+
+            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+            _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
+            vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
+
+            self.vacuum_coords_np = vacuum_coords
+            print(vacuum_coords)
+
+            self.segments = vacuum_coords
+            num_frames = len(self.segments)  # Number of frames is the length of the vacuum path
             self.interval = interval
 
             print("Within Vaccuum animation code")
@@ -380,10 +479,7 @@ class SimulationProcessor:
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         try:
             if vacuum_start_line is not None and vacuum_end_line is not None:
-                vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-                _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-                vacuum_coords = [(x, y, z) for _, x, y, z, _, _ in vacuum_coordinates]
-                self.plot_vacuum_animation(vacuum_coords, interval=50)
+                self.plot_vacuum_animation(vacuum_start_line, vacuum_end_line, interval=50)
             else:
                 print("No vacuum G-code found in the file.")
         except Exception as e:
