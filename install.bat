@@ -7,7 +7,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 
 :: Run PyInstaller to build the executable
-pyinstaller --noconfirm .\main.spec
+pyinstaller --clean --noconfirm .\main.spec
 
 :: If you have built before, you may need to clean the build rather than building it itself
 ::pyinstaller --clean --noconfirm .\main.spec 

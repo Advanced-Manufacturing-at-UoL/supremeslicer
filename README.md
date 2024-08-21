@@ -62,6 +62,63 @@
     pip install -r requirements.txt
     ```
 
+4. **Copy the contents from below to the main.spec file after running the install command **:
+  - Compile the file into one exe and generate generic spec file
+
+  ```bash
+  pyinstaller --onefile main.py
+  ```
+ - Copy over the spec file from below to the main.spec file
+```bash 
+  # -*- mode: python ; coding: utf-8 -*-
+  a = Analysis(
+      ['main.py'],
+      pathex=[],
+      binaries=[],
+      datas=[
+          ('lib', 'lib'),
+          ('tools', 'tools'),
+          ('configs','configs'),
+          ('tools', 'tools'),
+          ('input', 'input'),
+          ('output', 'output')
+      ],
+      hiddenimports=[],
+      hookspath=[],
+      hooksconfig={},
+      runtime_hooks=[],
+      excludes=[],
+      noarchive=False,
+  )
+  pyz = PYZ(a.pure)
+
+  exe = EXE(
+      pyz,
+      a.scripts,
+      a.binaries,
+      a.datas,
+      [],
+      name='main',
+      debug=False,
+      bootloader_ignore_signals=False,
+      strip=False,
+      upx=True,
+      upx_exclude=[],
+      runtime_tmpdir=None,
+      console=True,
+      disable_windowed_traceback=False,
+      argv_emulation=False,
+      target_arch=None,
+      codesign_identity=None,
+      entitlements_file=None,
+  )
+```
+ 
+ - Rebuild the exe through running:
+```bash 
+pyinstaller --clean main.spec
+```
+
 ### Configuration
 
 - Create or update configuration files for each tool:
