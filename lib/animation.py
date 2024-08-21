@@ -7,6 +7,7 @@ import vtk
 # Ensure we mute the shitty warnings
 vtk.vtkObject.GlobalWarningDisplayOff()
 
+
 class ToolpathAnimator:
     """Toolpath Animation Class for PyVista approach"""
     def __init__(self, gcode_file):
@@ -32,7 +33,7 @@ class ToolpathAnimator:
             'system': [],
             'type': []
         }
-        
+
         layer = 0
         current_z = 0.0
         material = 'polymer'  # Default material
@@ -49,12 +50,12 @@ class ToolpathAnimator:
             if line.startswith(';LAYER_CHANGE'):
                 layer += 1
                 continue
-            
+
             # Extract Z height
             z_match = re.search(r'G[01].*Z([-+]?\d*\.\d+|\d+)', line)
             if z_match:
                 current_z = float(z_match.group(1))
-            
+
             # Extract X, Y coordinates
             x_match = re.search(r'X([-+]?\d*\.\d+|\d+)', line)
             y_match = re.search(r'Y([-+]?\d*\.\d+|\d+)', line)
@@ -66,7 +67,7 @@ class ToolpathAnimator:
                 data['layer'].append(layer)
                 data['system'].append(material)
                 data['type'].append(move_type)
-            
+
             # Identify move type
             if "E" in line:
                 move_type = 'print'
@@ -153,7 +154,6 @@ class ToolpathAnimator:
 
         for layer in self.layers[:self.current_step + 1]:
             for mesh, color in self.meshes_per_layer[layer]:
-                # Adjust color if travel lines are hidden
                 if not self.show_travel_lines and 'blue' in color:
                     continue  # Skip travel lines if checkbox is off
                 self.plotter.add_mesh(mesh, color=color)
@@ -169,7 +169,6 @@ class ToolpathAnimator:
         self.layers = sorted(set(self.plot_data['layer']))
         self.setup_plotter()
 
-        # Use the plotter's interactive updating mode
         self.plotter.show(interactive_update=True)
 
         try:
@@ -179,31 +178,23 @@ class ToolpathAnimator:
                     self.update_plot()
                     time.sleep(round(len(self.layers)/10, 2)) # Time = 1/Frame Rate 
                 self.plotter.update()
-
         except KeyboardInterrupt:
             print("Keyboard interrupt detected, exiting program")
             print("Exiting")
             self.plotter.close()
-
         finally:
             print("Exiting")
             self.plotter.close()
 
     def save_animation(self, filepath, fps=10):
         """Generate and save the animation as a GIF file."""
-        # Set up the plotter for off-screen rendering
-        self.plotter = pv.Plotter(off_screen=True)
+        self.plotter = pv.Plotter(off_screen=True) # Set up the plotter for off-screen rendering
         self.plotter.set_background('white')
         self.plotter.add_text('Layer 0', font_size=12, color='black')
 
-        # Open GIF recording
-        self.plotter.open_gif(filepath, fps=fps)
-
-        # Sort the layers
-        self.layers = sorted(set(self.plot_data['layer']))
-
-        # Generate and store meshes per layer without showing the plotter window
-        self.meshes_per_layer = {layer: [] for layer in self.layers}
+        self.plotter.open_gif(filepath, fps=fps) # Open GIF recording
+        self.layers = sorted(set(self.plot_data['layer'])) # Sort the layers
+        self.meshes_per_layer = {layer: [] for layer in self.layers} # Create and store mesh/layer
 
         # Define colors and radii for different categories
         self.categories = {
@@ -225,35 +216,24 @@ class ToolpathAnimator:
                     if len(x) > 1:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
-
         # Iterate over each layer to update the plot and capture frames
         for layer in range(len(self.layers)):
             self.current_step = layer
             self.update_plot()
-
-            # Write frame to the GIF
-            self.plotter.write_frame()
-
-        # Close and finalize the GIF
-        self.plotter.close()
+            self.plotter.write_frame() # Write frame to the GIF
 
         print(f"Animation saved as {filepath}\n")
+        self.plotter.close()
 
     def save_final_layer(self, filepath, fps=10):
         """Generate and save the animation as a GIF file."""
-        # Set up the plotter for off-screen rendering
         self.plotter = pv.Plotter(off_screen=True)
         self.plotter.set_background('white')
         self.plotter.add_text('Layer 0', font_size=12, color='black')
 
-        # Open GIF recording
-        self.plotter.open_gif(filepath, fps=fps)
-
-        # Sort the layers
-        self.layers = sorted(set(self.plot_data['layer']))
-
-        # Generate and store meshes per layer without showing the plotter window
-        self.meshes_per_layer = {layer: [] for layer in self.layers}
+        self.plotter.open_gif(filepath, fps=fps) # Open GIF Recording
+        self.layers = sorted(set(self.plot_data['layer'])) # Sort the layers
+        self.meshes_per_layer = {layer: [] for layer in self.layers} # Create and store meshes/layer
 
         # Define colors and radii for different categories
         self.categories = {
@@ -279,10 +259,7 @@ class ToolpathAnimator:
         # Iterate over only the final layer to update the plot and capture the final frame
         self.current_step = len(self.layers) - 1  # Set to the last frame
         self.update_plot()
-
-        # Write the final frame to the GIF
-        self.plotter.write_frame()
-        # Close and finalize the GIF
-        self.plotter.close()
+        self.plotter.write_frame() # Write the final frame to the GIF
 
         print(f"Animation saved as {filepath}\n")
+        self.plotter.close()

@@ -4,8 +4,9 @@ import time
 import sys
 import os
 
-"""Utils class for running utility functions"""
+
 class Utils:
+    """Utils class for running utility functions"""
     @staticmethod
     def read_yaml(file_path):
         try:
