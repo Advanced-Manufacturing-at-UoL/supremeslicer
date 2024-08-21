@@ -124,15 +124,15 @@ class SimulationProcessor:
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
 
-        print("Starting the update_plot function")
-
         if not self.animating:  # Avoid updating if not animating
             return
 
         if not hasattr(self, 'lines'):
             self.lines = []
-
-        print("Gonna clear the workspace")
+        if not hasattr(self, 'vacuum_line'):
+            self.vacuum_line = None
+        if not hasattr(self, 'travel_line'):
+            self.travel_line = None
 
         # Clear existing lines and mesh
         for line in self.lines:
@@ -142,36 +142,31 @@ class SimulationProcessor:
             self.mesh.remove()
             self.mesh = None
 
-        print("Checking if mesh or not to display lines")
         if self.is_mesh_displayed:  # Display mesh when paused
-            print("Displaying mesh")
             x_vals, y_vals, z_vals = zip(*self.coords_np[:num])
             self.mesh = self.ax.plot_trisurf(x_vals, y_vals, z_vals, color='b', alpha=0.3)
 
-        elif hasattr(self, 'vacuum_coords_np') and self.show_travel:  # Display vacuum coordinates
-            print("Within vacuum coordinates update method")
+        if hasattr(self, 'vacuum_coords_np') and len(self.vacuum_coords_np) > 0:
             vacuum_lines = self.vacuum_coords_np[:num]
             if len(vacuum_lines) > 0:
                 x_vals, y_vals, z_vals = zip(*vacuum_lines)
-                if hasattr(self, 'vacuum_line') and self.vacuum_line:
+                if self.vacuum_line:
                     self.vacuum_line.set_data(x_vals, y_vals)
                     self.vacuum_line.set_3d_properties(z_vals)
                 else:
                     self.vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
 
-        elif hasattr(self, 'travel_coords_np') and self.show_travel:  # Display travel coordinates
-            print("Travel lines so we're plotting travel")
+        if self.show_travel and hasattr(self, 'travel_coords_np') and len(self.travel_coords_np) > 0:
             travel_lines = self.travel_coords_np[:num]
             if len(travel_lines) > 0:
                 x_vals, y_vals, z_vals = zip(*travel_lines)
-                if hasattr(self, 'travel_line') and self.travel_line:
+                if self.travel_line:
                     self.travel_line.set_data(x_vals, y_vals)
                     self.travel_line.set_3d_properties(z_vals)
                 else:
                     self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
 
-        else:  # Display general path coordinates
-            print("Plotting general line data")
+        if hasattr(self, 'common_e_coords_np') and len(self.common_e_coords_np) > 0:
             for i, segment in enumerate(self.segments[:num]):
                 if len(segment) > 0:
                     x_vals, y_vals, z_vals = zip(*segment)
@@ -187,6 +182,7 @@ class SimulationProcessor:
             self.slider.set_val(num)
 
         self.fig.canvas.draw_idle()
+
 
 
     def pause_animation(self, event):
