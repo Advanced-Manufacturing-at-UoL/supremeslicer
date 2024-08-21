@@ -121,7 +121,7 @@ class SimulationProcessor:
 
         return segments
 
-    def update_vacuum(self, num):
+    def update_plot(self, num):
         """Update the plot with each new coordinate."""
 
         print("Starting the update_plot function")
@@ -188,76 +188,6 @@ class SimulationProcessor:
 
         self.fig.canvas.draw_idle()
 
-    def update_plot(self, num):
-        """Update the plot with each new coordinate."""
-
-        print("Starting the update_plot function")
-
-        if not self.animating:  # Avoid updating if not animating
-            return
-
-        if not hasattr(self, 'lines'):
-            self.lines = []
-
-        print("Gonna clear the workspace")
-
-        # Clear existing lines and mesh
-        for line in self.lines:
-            line.set_data([], [])
-            line.set_3d_properties([])
-        if hasattr(self, 'mesh') and self.mesh:
-            self.mesh.remove()
-            self.mesh = None
-
-        print("Checking if mesh if not display lines")
-        if self.is_mesh_displayed:  # Display mesh when paused
-            print("Displaying mesh")
-            x_vals, y_vals, z_vals = zip(*self.coords_np[:num])
-            self.mesh = self.ax.plot_trisurf(x_vals, y_vals, z_vals, color='b', alpha=0.3)
-        else:  # Display lines during animation
-            print("Plotting general line data")
-            for i, segment in enumerate(self.segments[:num]):
-                print("Holy shit im in the for loop")
-                if len(segment) > 0:
-                    print("Checking legnth of segment")
-                    x_vals, y_vals, z_vals = zip(*segment)
-                    if i < len(self.lines):
-                        line = self.lines[i]
-                        line.set_data(x_vals, y_vals)
-                        line.set_3d_properties(z_vals)
-                    else:
-                        line, = self.ax.plot(x_vals, y_vals, z_vals, color='b', lw=0.5)
-                        self.lines.append(line)
-
-        print("Checking if data has travel coords np")
-        if hasattr(self, 'travel_coords_np') and self.show_travel:
-            print("Travel lines so we're plotting travel")
-            travel_lines = self.travel_coords_np[:num]
-            if len(travel_lines) > 0:
-                x_vals, y_vals, z_vals = zip(*travel_lines)
-                if hasattr(self, 'travel_line') and self.travel_line:
-                    self.travel_line.set_data(x_vals, y_vals)
-                    self.travel_line.set_3d_properties(z_vals)
-                else:
-                    self.travel_line, = self.ax.plot(x_vals, y_vals, z_vals, color='g', lw=0.5)
-
-        print("Checking if data has vacuum_coords np")
-        if hasattr(self, 'vacuum_coords_np') and self.show_travel:
-            print("Within vacuum coordinates update method")
-            vacuum_lines = self.vacuum_coords_np[:num]
-            print(vacuum_lines)
-            if len(vacuum_lines) > 0:
-                x_vals, y_vals, z_vals = zip(*vacuum_lines)
-                if hasattr(self, 'vacuum_coords_np') and self.vacuum_line:
-                    self.vacuum_line.set_data(x_vals, y_vals)
-                    self.vacuum_line.set_3d_properties(z_vals)
-                else:
-                    self.vacuum_line, = self.ax.plot(x_vals, y_vals, z_vals, color='r', lw=0.5)
-        
-        if self.slider.val != num:
-            self.slider.set_val(num)
-
-        self.fig.canvas.draw_idle()
 
     def pause_animation(self, event):
         """Pause the animation and display the mesh."""
