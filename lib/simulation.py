@@ -260,10 +260,9 @@ class SimulationProcessor:
             f_ecoords = filter_close_coordinates(e_coords_list)
             f_travel_coords = filter_close_coordinates(travel_coords_list)
 
-            print(f"Length coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
+            print(f"\nLength coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
             print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
             print(f"Length e coords:{len(e_coords_list)}\nlength filtered e coords: {len(f_ecoords)}\n")
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n")
 
             common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
             travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
@@ -277,7 +276,7 @@ class SimulationProcessor:
             self.segments = self.split_into_segments(f_coords)
             num_frames = len(self.segments)
             self.interval = interval
-            print(f"The length of segments with the new approach is {len(self.segments)}")
+            print(f"The length of segments is: {len(self.segments)}")
 
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
@@ -341,8 +340,7 @@ class SimulationProcessor:
             self.segments = vacuum_coords
             num_frames = len(self.segments)  # Number of frames is the length of the vacuum path
             self.interval = interval
-
-            print(f"There are {num_frames} frames to plot within the vacuum code\n")
+            print(f"The length of segments is: {num_frames}")
 
             if num_frames == 0:
                 print("No segments found in the vacuum G-code. Cannot create animation.")
@@ -371,7 +369,7 @@ class SimulationProcessor:
             btn_pause = Button(ax_pause, 'Pause')
             btn_forward = Button(ax_forward, 'Forward')
             btn_backward = Button(ax_backward, 'Backward')
-            self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
+            self.slider = Slider(ax_slider, 'Frame', 0, num_frames -1, valinit=0, valstep=1)
 
             btn_play.on_clicked(self.play_animation)
             btn_pause.on_clicked(self.pause_animation)
@@ -389,7 +387,7 @@ class SimulationProcessor:
         vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
         try:
             if vacuum_start_line is not None and vacuum_end_line is not None:
-                self.plot_vacuum_animation(vacuum_start_line, vacuum_end_line, interval=50)
+                self.plot_vacuum_animation(vacuum_start_line, vacuum_end_line, interval=200)
             else:
                 print("No vacuum G-code found in the file.")
         except Exception as e:
@@ -460,22 +458,18 @@ def filter_close_coordinates(coordinates, threshold=0):
         if not coordinates:
             return []
 
-        print(f"You have input coordinates of length {len(coordinates)}")
         filtered_coords = [coordinates[0]]
 
         for coord in coordinates[1:]:
             last_filtered_coord = filtered_coords[-1]
-            
+
             # Extract X, Y, Z for distance calculation and ensure they're floats
             last_x, last_y, last_z = float(last_filtered_coord[1]), float(last_filtered_coord[2]), float(last_filtered_coord[3])
             curr_x, curr_y, curr_z = float(coord[1]), float(coord[2]), float(coord[3])
             distance = np.linalg.norm([curr_x - last_x, curr_y - last_y, curr_z - last_z])
-            
+
             if distance > threshold:
                 filtered_coords.append(coord)
-
-        print(f"Returning length of final set of filtered_coords {len(filtered_coords)}")
-        print(type(filtered_coords))
 
         return filtered_coords
     except Exception as e:

@@ -121,7 +121,7 @@ class MainEngine:
         try:
             print("1. Plot Original Toolpath")
             print("2. Plot Vacuum Toolpath")
-            user_in = int(input("Generate original or tool-specific toolpath?"))
+            user_in = int(input("Generate original or tool-specific toolpath?\n"))
 
             self._output_folder() # Retrieve the output folder and file
             simulation_processor = SimulationProcessor(self.filename)
