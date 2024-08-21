@@ -1,13 +1,14 @@
-from lib.super_slicer import SuperSlicer
+import os
+
 from lib.utils import Utils
-from tools.vacuum_pnp import VacuumPnP
+from lib.super_slicer import SuperSlicer
 from lib.simulation import SimulationProcessor
 from lib.animation import ToolpathAnimator
-import os
-import yaml
+from tools.vacuum_pnp import VacuumPnP
 
-"""Main Engine Class for running the overall program"""
+
 class MainEngine:
+    """Main Engine Class for running the overall program"""
     def __init__(self):
         self.start_time = None
         self.config = Utils.read_yaml(r'configs/config.yaml')
@@ -16,12 +17,15 @@ class MainEngine:
         self.filename = None
 
     def start(self):
+        """Method to start timer"""
         self.start_time = Utils.start_timer()
 
     def stop(self):
+        """Method to stop timer"""
         Utils.stop_timer(self.start_time)
 
     def _output_doc(self):
+        """Output documentation to the user"""
         Utils.sleep(0.5)
         print("\nThis tool was made by Pralish Satyal and can slice an STL, converting it to GCODE\n")
         Utils.sleep(0.5)
@@ -44,26 +48,21 @@ class MainEngine:
         print("Good luck and enjoy the software!\n")
         Utils.sleep(1)
 
-
     def _run_slicer(self):
+        """Run the native Supreme Slicer"""
         self.start()
         self.slicer.slice_gcode()
         self.stop()
         print("\n")
 
     def _output_folder(self):
-        # Access the input STL and output directory from the loaded config
+        """Access the directories from the configuration file"""
         input_stl_path = self.config['input_stl']
         output_directory = self.config['output_dir']
 
-        # Extract the base filename (without extension) from the input STL file path
-        base_filename = os.path.splitext(os.path.basename(input_stl_path))[0]
-
-        # Construct the expected G-code filename
-        expected_gcode_file = f"{base_filename}.gcode"
-
-        # Full path of the expected G-code file in the output directory
-        output_gcode_path = os.path.join(output_directory, expected_gcode_file)
+        base_filename = os.path.splitext(os.path.basename(input_stl_path))[0] # Extract the base filename
+        expected_gcode_file = f"{base_filename}.gcode" # Construct the expected G-code filename
+        output_gcode_path = os.path.join(output_directory, expected_gcode_file) # Full path with base and filename
 
         if not os.path.exists(output_gcode_path):
             print(f"No corresponding G-code file found for {input_stl_path} in the output directory.")
@@ -71,9 +70,9 @@ class MainEngine:
 
         self.filename = output_gcode_path
         self.output_directory = output_directory
-        #print(f"Found G-code file: {self.filename}")
 
     def _vacuum_tool(self):
+        """Load Vacuum Tool Menu Options"""
         print("Loading VacuumPnP tool\n")
         config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
 
@@ -101,6 +100,7 @@ class MainEngine:
             print("Invalid option. Please select 1 or 2.")
 
     def _run_tools(self):
+        """Render Tool Option Menu"""
         print("Select a tool to enter:")
         print("1. VacuumPnP")
         print("2. Screwdriver")
@@ -117,16 +117,13 @@ class MainEngine:
             print("\nTool not programmed yet. Sorry!\n")
 
     def _run_simulation(self):
-        """Runs the simulation for plotting the toolpath."""
+        """Render simulation menu for simulating toolpaths"""
         try:
             print("1. Plot Original Toolpath")
             print("2. Plot Vacuum Toolpath")
             user_in = int(input("Generate original or tool-specific toolpath?"))
 
-            # Retrieve the output folder and file
-            self._output_folder()
-
-            # Initialize the simulation processor
+            self._output_folder() # Retrieve the output folder and file
             simulation_processor = SimulationProcessor(self.filename)
 
             if user_in == 1:
@@ -137,60 +134,55 @@ class MainEngine:
                 print("Completed plotting vacuum toolpath.\n")
             else:
                 print("Invalid selection. Please choose 1 or 2.\n")
-
         except ValueError as ve:
-            print(f"Value error: {ve}")
+            raise ValueError(f"Value error: {ve}")
         except FileNotFoundError as fnfe:
-            print(f"File not found error: {fnfe}")
+            raise FileNotFoundError(f"File not found error: {fnfe}")
         except IOError as ioe:
-            print(f"IO error: {ioe}")
+            raise IOError(f"IO error: {ioe}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            raise(f"An unexpected error occurred: {e}")
 
     def _run_animation(self):
-        """Runs the simulation for plotting the toolpath."""
+        """Render animation menu for plotting layer by layer animation."""
         try:
             print("1. Output rendered simulation")
             print("2. Output final frame to file")
             print("3. Output entire animation as GIF")
             user_in = int(input("Please choose an option\n"))
 
-            # Retrieve the output folder and file
-            self._output_folder()
+            self._output_folder() # Retrieve the output folder
 
             if user_in == 1:
                 print("Plotting Original toolpath")
-                # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 animator.animate_toolpath()
             elif user_in == 2:
                 print("\nSaving final Layer")
-                # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 file_location = self.output_directory + '/final_layer.gif'
                 animator.save_final_layer(file_location)
             elif user_in == 3:
                 print("\nSaving entire animation. This will take a few minutes.")
-                # Initialise animator
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 file_location = self.output_directory +'/render.gif'
                 animator.save_animation(file_location)
             else:
                 print("Invalid selection. Please choose 1 or 2.")
-
         except ValueError as ve:
-            print(f"Value error: {ve}")
+            raise ValueError(f"Value error: {ve}")
         except FileNotFoundError as fnfe:
-            print(f"File not found error: {fnfe}")
+            raise FileNotFoundError(f"File not found error: {fnfe}")
         except IOError as ioe:
-            print(f"IO error: {ioe}")
+            raise IOError(f"IO error: {ioe}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            raise(f"An unexpected error occurred: {e}")
 
     def _read_config(self):
+        """Method to read SupremeSlicer config file"""
         Utils.sleep(1)
         self.start()
         print("\n")
@@ -199,9 +191,7 @@ class MainEngine:
         print("\n")
 
     def cli(self):
-        """
-        Command-line interface for the SupremeSlicer application.
-        """
+        """Command-line interface for the SupremeSlicer application."""
         print("\nWelcome to the SupremeSlicer\n")
         print("Please ensure that you have read the README and have correctly")
         print("added a config.yaml file under the configs repository")
@@ -220,7 +210,7 @@ class MainEngine:
             except ValueError:
                 print("Invalid input. Please enter a number.")
                 continue
-            
+
             if user_in == 0:
                 self._output_doc()
             elif user_in == 1:

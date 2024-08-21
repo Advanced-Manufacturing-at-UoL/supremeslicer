@@ -1,16 +1,19 @@
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-import matplotlib.animation as animation
-from matplotlib.widgets import Button, Slider
-from lib.utils import Utils
 import re
 import time
 import yaml
 
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.animation as animation
+from matplotlib.widgets import Button, Slider
+
+from lib.utils import Utils
+
+
 class SimulationProcessor:
     def __init__(self, filename):
-        """Initialize class"""
+        """Initialise class"""
         self.config_file = Utils.get_resource_path('configs/simulation.yaml')
         self.filename = filename
         self.config = self.load_config()
@@ -31,7 +34,7 @@ class SimulationProcessor:
             with open(self.config_file, 'r') as f:
                 return yaml.safe_load(f)
         except FileNotFoundError:
-            raise(f"Error: Configuration file {self.config_file} not found.")
+            raise FileNotFoundError(f"Error: Configuration file {self.config_file} not found.")
 
     def read_gcode(self):
         """Read G-code from a file."""
@@ -39,7 +42,7 @@ class SimulationProcessor:
             with open(self.filename, 'r') as f:
                 return f.readlines()
         except FileNotFoundError:
-            raise(f"Error: File {self.filename} not found.")
+            raise FileNotFoundError(f"Error: File {self.filename} not found.")
 
     def find_vacuum_gcode_lines(self):
         """Find the start and end lines of the vacuum G-code."""
@@ -95,7 +98,7 @@ class SimulationProcessor:
                 except ValueError:
                     print(f"Error parsing coordinate: {coord}")
 
-            if command and (command == 'G0' or command == 'G1'):
+            if command in {'G0', 'G1'}:
                 if contains_e:
                     e_coordinates.append((command, x, y, z, line_number))
                 else:
@@ -123,7 +126,6 @@ class SimulationProcessor:
 
     def update_plot(self, num):
         """Update the plot with each new coordinate."""
-
         if not self.animating:  # Avoid updating if not animating
             return
 
@@ -182,8 +184,6 @@ class SimulationProcessor:
             self.slider.set_val(num)
 
         self.fig.canvas.draw_idle()
-
-
 
     def pause_animation(self, event):
         """Pause the animation and display the mesh."""
@@ -254,20 +254,11 @@ class SimulationProcessor:
 
     def plot_toolpath_animation(self, e_coords_list, travel_coords_list, coordinates, interval):
         """Animate the toolpath given a list of (command, x, y, z) coordinates."""
-
         try:
-        
-            print("\n\n~~~~~~~~~~~~Coordinate Elements Original~~~~~~~~~~~~\n")
-
             # Apply the filter before abstracting values below
             f_coords = filter_close_coordinates(coordinates)
             f_ecoords = filter_close_coordinates(e_coords_list)
             f_travel_coords = filter_close_coordinates(travel_coords_list)
-            print("~~~~~~~~~~~~Coordinate Elements Filtered~~~~~~~~~~~~")
-            print("Type: Coordinates, E_coords, Travel_coords")
-            print(type(coordinates), type(e_coords_list), type(travel_coords_list))
-            print("Type of filtered: Coordinates, E_coords, Travel_coords")
-            print(type(f_coords), type(f_ecoords), type(f_travel_coords))
 
             print(f"Length coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
             print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
@@ -277,18 +268,17 @@ class SimulationProcessor:
             common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
             travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
             coords = np.array([[x, y, z] for _, x, y, z, _, _ in f_coords])
-            
+
             # Apply the filter just once, to filter the entire coordinates list
             self.common_e_coords_np = common_e_coords_np
             self.travel_coords_np = travel_coords
             self.coords_np = coords
 
-
             self.segments = self.split_into_segments(f_coords)
             num_frames = len(self.segments)
             self.interval = interval
             print(f"The length of segments with the new approach is {len(self.segments)}")
-            
+
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
             self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
@@ -314,7 +304,7 @@ class SimulationProcessor:
             self.ax.set_ylabel('Y')
             self.ax.set_zlabel('Z')
             self.ax.set_title('G-code Toolpath Simulation')
-            
+
             # Create playback controls
             ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
             ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
@@ -335,29 +325,24 @@ class SimulationProcessor:
             self.slider.on_changed(self.update_slider)
 
             plt.show()
-        
         except Exception as e:
             print("Within plot_toolpath_animation")
             print(f"Error occured {e}")
 
     def plot_vacuum_animation(self, vacuum_start_line, vacuum_end_line, interval):
         """Animate the vacuum toolpath given a list of (x, y, z) coordinates."""
-
         try:
-
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
             vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
 
             self.vacuum_coords_np = vacuum_coords
-            print(vacuum_coords)
 
             self.segments = vacuum_coords
             num_frames = len(self.segments)  # Number of frames is the length of the vacuum path
             self.interval = interval
 
-            print("Within Vaccuum animation code")
-            print(num_frames)
+            print(f"There are {num_frames} frames to plot within the vacuum code\n")
 
             if num_frames == 0:
                 print("No segments found in the vacuum G-code. Cannot create animation.")
@@ -395,7 +380,6 @@ class SimulationProcessor:
             self.slider.on_changed(self.update_slider)
 
             plt.show()
-
         except Exception as e:
             print("Within plot_vacuum_animation")
             print(f"Error occured {e}")
@@ -424,7 +408,6 @@ class SimulationProcessor:
             print("Error within plot_original_toolpath")
             print(f"Error occured {e}")
 
-
     def create_line_number_mapping(self, filtered_lines):
         """Create a mapping of original line numbers to their indices in the filtered list."""
         line_number_to_index = {}
@@ -442,30 +425,22 @@ class SimulationProcessor:
 
     def get_vacuum_coordinates(self):
         """Find and print the coordinates corresponding to the vacuum PnP toolpath."""
-        
         try:
-        
             filtered_lines = [line.strip() for line in self.gcode if line.strip() and not line.strip().startswith(';')]
             line_number_to_index = self.create_line_number_mapping(filtered_lines)
-
-            # Find the vacuum G-code lines
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+
             if vacuum_start_line is None or vacuum_end_line is None:
                 print("No vacuum injection G-code found.")
                 return
 
-            # Parse the vacuum G-code to get coordinates
             vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
             vacuum_coords = self.parse_gcode(vacuum_gcode)
-
-            # Extract the original line numbers from the full G-code
             full_gcode_coords = self.parse_gcode(self.gcode)
-            original_line_numbers = [coord[4] for coord in full_gcode_coords]
 
-            # Map line numbers to frame indices
+            original_line_numbers = [coord[4] for coord in full_gcode_coords]
             line_number_to_frame = {line_number: idx for idx, (cmd, x, y, z, line_number) in enumerate(full_gcode_coords)}
 
-            # Extract and print vacuum coordinates based on the frame indices
             vacuum_coords_frames = [(vac_coord[1], vac_coord[2], vac_coord[3])
                                     for vac_coord in vacuum_coords
                                     if vac_coord[4] in line_number_to_frame]
@@ -480,14 +455,13 @@ class SimulationProcessor:
             print(f"Error occured {e}")
 
 def filter_close_coordinates(coordinates, threshold=0):
-    """Filter out coordinates that are too close to each other based on the threshold."""
+    """Filter out coordinates too close to each other based on threshold."""
     try:
         if not coordinates:
             return []
 
         print(f"You have input coordinates of length {len(coordinates)}")
-
-        filtered_coords = [coordinates[0]]  # Start with the first coordinate
+        filtered_coords = [coordinates[0]]
 
         for coord in coordinates[1:]:
             last_filtered_coord = filtered_coords[-1]
@@ -495,7 +469,6 @@ def filter_close_coordinates(coordinates, threshold=0):
             # Extract X, Y, Z for distance calculation and ensure they're floats
             last_x, last_y, last_z = float(last_filtered_coord[1]), float(last_filtered_coord[2]), float(last_filtered_coord[3])
             curr_x, curr_y, curr_z = float(coord[1]), float(coord[2]), float(coord[3])
-            
             distance = np.linalg.norm([curr_x - last_x, curr_y - last_y, curr_z - last_z])
             
             if distance > threshold:
@@ -503,7 +476,7 @@ def filter_close_coordinates(coordinates, threshold=0):
 
         print(f"Returning length of final set of filtered_coords {len(filtered_coords)}")
         print(type(filtered_coords))
-        
+
         return filtered_coords
     except Exception as e:
         print("Error within filter_close_coordinates")
