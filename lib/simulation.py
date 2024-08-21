@@ -369,7 +369,7 @@ class SimulationProcessor:
             btn_pause = Button(ax_pause, 'Pause')
             btn_forward = Button(ax_forward, 'Forward')
             btn_backward = Button(ax_backward, 'Backward')
-            self.slider = Slider(ax_slider, 'Frame', 0, num_frames -1, valinit=0, valstep=1)
+            self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
 
             btn_play.on_clicked(self.play_animation)
             btn_pause.on_clicked(self.pause_animation)

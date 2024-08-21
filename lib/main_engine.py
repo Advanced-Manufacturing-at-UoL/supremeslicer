@@ -192,6 +192,7 @@ class MainEngine:
 
     def cli(self):
         """Command-line interface for the SupremeSlicer application."""
+        os.system('cls')
         print("\nWelcome to the SupremeSlicer\n")
         print("Please ensure that you have read the README and have correctly")
         print("added a config.yaml file under the configs repository")
