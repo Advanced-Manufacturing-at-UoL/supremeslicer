@@ -5,14 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('lib', 'lib'),
-        ('tools', 'tools'),
-        ('configs','configs'),
-        ('tools', 'tools'),
-        ('input', 'input'),
-        ('output', 'output')
-    ],
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -41,4 +34,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    onefile=True,
 )
