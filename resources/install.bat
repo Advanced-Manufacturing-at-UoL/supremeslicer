@@ -21,6 +21,11 @@ if /i "%build_exe%"=="y" (
 if exist dist\main.exe (
     move dist\main.exe ..
     echo Executable moved to parent directory.
+    
+    :: Delete the dist directory after moving the executable
+    rmdir /s /q dist
+    echo dist directory deleted.
+    
 ) else (
     echo Executable not found, skipping move.
 )
