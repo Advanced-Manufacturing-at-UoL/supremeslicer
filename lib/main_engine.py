@@ -11,7 +11,7 @@ class MainEngine:
     """Main Engine Class for running the overall program"""
     def __init__(self):
         self.start_time = None
-        self.config = Utils.read_yaml(Utils.get_resource_path(r'configs/config.yaml'))
+        self.config = Utils.read_yaml(r'configs/config.yaml')
         self.slicer = SuperSlicer(self.config)    
         self.vacuum_pnp_tool = None
         self.filename = None
