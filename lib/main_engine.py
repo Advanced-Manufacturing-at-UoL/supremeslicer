@@ -11,7 +11,7 @@ class MainEngine:
     """Main Engine Class for running the overall program"""
     def __init__(self):
         self.start_time = None
-        self.config = Utils.read_yaml(r'configs/config.yaml')
+        self.config = Utils.read_yaml(Utils.get_resource_path(r'configs/config.yaml'))
         self.slicer = SuperSlicer(self.config)    
         self.vacuum_pnp_tool = None
         self.filename = None
@@ -163,13 +163,13 @@ class MainEngine:
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 file_location = self.output_directory + '/final_layer.gif'
-                animator.save_final_layer(file_location)
+                animator.save_final_layer(Utils.get_resource_path(file_location))
             elif user_in == 3:
                 print("\nSaving entire animation. This will take a few minutes.")
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 file_location = self.output_directory +'/render.gif'
-                animator.save_animation(file_location)
+                animator.save_animation(Utils.get_resource_path(file_location))
             else:
                 print("Invalid selection. Please choose 1 or 2.")
         except ValueError as ve:
@@ -186,7 +186,7 @@ class MainEngine:
         Utils.sleep(1)
         self.start()
         print("\n")
-        Utils.print_yaml(r'configs\config.yaml')
+        Utils.print_yaml(Utils.get_resource_path(r'configs\config.yaml'))
         self.stop()
         print("\n")
 

@@ -22,14 +22,13 @@ import logging
 from lib.main_engine import MainEngine
 from lib.utils import Utils
 
-logging.basicConfig(filename = Utils.get_resource_path('error_log.txt'), level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 def main():
     try:
         main_client = MainEngine()
         main_client.cli()
     except Exception as e:
+        logging.basicConfig(filename = Utils.get_resource_path('error_log.txt'), level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
         logging.error("An error occurred: %s", str(e), exc_info=True)
         print("An error occurred. Please check the error_log.txt file for more details.")
         traceback.print_exc()
