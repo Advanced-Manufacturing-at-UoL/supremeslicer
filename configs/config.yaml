@@ -1,4 +1,4 @@
 superslicer_executable: "C:\\Users\\prali\\Desktop\\Pralish\\Emplyment Work\\University Work\\Software\\SuperSlicer_2.5.59.13_win64_240701\\SuperSlicer_2.5.59.13_win64_240701\\superslicer.exe"
-printer_profile: "C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\SupremeSlicer\supremeslicer\configs\PrusaSlicer_config_bundle-010724.ini"
+printer_profile: "C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\SupremeSlicer\supremeslicer\data\NewTest.ini"
 input_stl: "C:\\Users\\prali\\Desktop\\Pralish\\Emplyment Work\\University Work\\Software\\SupremeSlicer\\supremeslicer\\input\\benchy.stl"
 output_dir: "C:\\Users\\prali\\Desktop\\Pralish\\Emplyment Work\\University Work\\Software\\SupremeSlicer\\supremeslicer\\output"

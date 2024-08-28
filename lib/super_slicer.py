@@ -16,9 +16,10 @@ class SuperSlicer:
         """Method to slice stl and export output to gcode file"""
         command = [
             self.superslicer_executable,
+            "--datadir"
             "--load", self.printer_profile,
+            "--output", self.output_dir,
             "--export-gcode", self.input_stl,
-            "--output", self.output_dir
         ]
 
         try:
