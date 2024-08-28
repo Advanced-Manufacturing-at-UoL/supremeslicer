@@ -1,7 +1,7 @@
 import os
 
 from lib.utils import Utils
-from lib.super_slicer import SuperSlicer
+from lib.prusa_slicer import PrusaSlicer
 from lib.simulation import SimulationProcessor
 from lib.animation import ToolpathAnimator
 from tools.vacuum_pnp import VacuumPnP
@@ -12,7 +12,7 @@ class MainEngine:
     def __init__(self):
         self.start_time = None
         self.config = Utils.read_yaml(r'configs/config.yaml')
-        self.slicer = SuperSlicer(self.config)    
+        self.slicer = PrusaSlicer(self.config)    
         self.vacuum_pnp_tool = None
         self.filename = None
 

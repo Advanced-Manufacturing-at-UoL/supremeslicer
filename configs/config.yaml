@@ -1,4 +1,4 @@
-superslicer_executable: "C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\PrusaSlicer-2.8.0+win64-202406270929\PrusaSlicer-2.8.0+win64-202406270929\prusa-slicer.exe"
+prusaslicer_executable: "C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\PrusaSlicer-2.8.0+win64-202406270929\PrusaSlicer-2.8.0+win64-202406270929\prusa-slicer.exe"
 printer_profile: "C:\Users\prali\Desktop\Pralish\Emplyment Work\University Work\Software\SupremeSlicer\supremeslicer\configs\AMPIConfigFile.ini"
 input_stl: "C:\\Users\\prali\\Desktop\\Pralish\\Emplyment Work\\University Work\\Software\\SupremeSlicer\\supremeslicer\\input\\benchy.stl"
 output_dir: "C:\\Users\\prali\\Desktop\\Pralish\\Emplyment Work\\University Work\\Software\\SupremeSlicer\\supremeslicer\\output"

@@ -43,7 +43,6 @@ class SuperSlicer:
         """Method to slice STL and export output to G-code file"""
         output_gcode_path = os.path.join(self.output_dir, os.path.basename(self.input_stl).replace('.stl', '.gcode'))
 
-        # Construct the command with the correct paths
         command = [
             self.superslicer_executable,
             "--load", self.printer_profile,
@@ -51,7 +50,7 @@ class SuperSlicer:
             "--output", output_gcode_path
         ]
 
-        print("Executing command:", ' '.join(command), "\n")  # Debugging line to check the command
+        print("Executing command:", ' '.join(command), "\n")
 
         try:
             result = subprocess.run(command, check=True, text=True, capture_output=True)
@@ -66,7 +65,6 @@ class SuperSlicer:
 if __name__ == "__main__":
     config = Utils.read_yaml(r'configs/config.yaml')
     slicer = SuperSlicer(config)
-    
-    # Slice the STL to G-code using the provided configuration
+
     slicer._confirm_input()
     slicer.slice_gcode()
