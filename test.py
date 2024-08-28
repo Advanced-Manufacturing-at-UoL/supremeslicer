@@ -20,6 +20,7 @@ class SuperSlicer:
         print(f"Printer profile loaded is: {self.printer_profile}")
         print(f"Input STL path: {self.input_stl}")
         print(f"Output directory loaded: {self.output_dir}\n")
+        print("\n\n\n\n\n")
 
     def set_preset(self):
         """Method to save the current configuration preset to a .ini file"""
@@ -50,7 +51,7 @@ class SuperSlicer:
             "--output", output_gcode_path
         ]
 
-        print("Executing command:", ' '.join(command))  # Debugging line to check the command
+        print("Executing command:", ' '.join(command), "\n")  # Debugging line to check the command
 
         try:
             result = subprocess.run(command, check=True, text=True, capture_output=True)
@@ -68,5 +69,4 @@ if __name__ == "__main__":
     
     # Slice the STL to G-code using the provided configuration
     slicer._confirm_input()
-    # slicer.set_preset()
     slicer.slice_gcode()
