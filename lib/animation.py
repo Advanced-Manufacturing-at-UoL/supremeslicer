@@ -19,7 +19,7 @@ class ToolpathAnimator:
         self.current_step = 0
         self.is_playing = False
         self.slider = None
-        self.show_travel_lines = True
+        self.show_travel_lines = False
 
     def parse_gcode(self):
         """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
@@ -105,6 +105,9 @@ class ToolpathAnimator:
         # Prepare a dictionary to store meshes for each layer
         self.meshes_per_layer = {layer: [] for layer in self.layers}
 
+        # Calculate global bounds
+        self.global_bounds = [np.inf, -np.inf, np.inf, -np.inf, np.inf, -np.inf]
+
         # Generate and store meshes for each layer
         for layer in self.layers:
             for (material, move_type), properties in self.categories.items():
@@ -117,6 +120,28 @@ class ToolpathAnimator:
                     if len(x) > 1:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
+
+                        # Update global bounds
+                        bounds = mesh.bounds
+                        self.global_bounds = [
+                            min(self.global_bounds[0], bounds[0]),
+                            max(self.global_bounds[1], bounds[1]),
+                            min(self.global_bounds[2], bounds[2]),
+                            max(self.global_bounds[3], bounds[3]),
+                            min(self.global_bounds[4], bounds[4]),
+                            max(self.global_bounds[5], bounds[5])
+                        ]
+
+        # Set camera to fit the entire bounding box
+        self.plotter.camera.SetPosition(0, 0, (self.global_bounds[5] - self.global_bounds[4]) * 1.5)
+        self.plotter.camera.SetFocalPoint(
+            (self.global_bounds[1] + self.global_bounds[0]) / 2,
+            (self.global_bounds[3] + self.global_bounds[2]) / 2,
+            (self.global_bounds[5] + self.global_bounds[4]) / 2
+        )
+        self.plotter.camera.SetViewUp(0, 1, 0)
+        self.plotter.camera.Zoom(1.5)
+        self.plotter.reset_camera()
 
         # Add slider widget
         def slider_callback(value):
@@ -160,7 +185,20 @@ class ToolpathAnimator:
 
         # Update the text to show the current layer
         self.plotter.add_text(f'Layer {self.layers[self.current_step]}', font_size=12, color='black')
+
+        # Ensure the camera view is consistent
+        self.plotter.camera.SetPosition(0, 0, (self.global_bounds[5] - self.global_bounds[4]) * 1.5)
+        self.plotter.camera.SetFocalPoint(
+            (self.global_bounds[1] + self.global_bounds[0]) / 2,
+            (self.global_bounds[3] + self.global_bounds[2]) / 2,
+            (self.global_bounds[5] + self.global_bounds[4]) / 2
+        )
+        self.plotter.camera.SetViewUp(0, 1, 0)
+        self.plotter.camera.Zoom(1.5)
+        self.plotter.reset_camera()
+
         self.plotter.render()
+
 
     def animate_toolpath(self):
         """Set up the plotter and display the interactive animation."""
@@ -216,6 +254,8 @@ class ToolpathAnimator:
                     if len(x) > 1:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
+        
+            
         # Iterate over each layer to update the plot and capture frames
         for layer in range(len(self.layers)):
             self.current_step = layer
@@ -255,6 +295,8 @@ class ToolpathAnimator:
                     if len(x) > 1:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
+        
+        # Temporarily disable travel plot
 
         # Iterate over only the final layer to update the plot and capture the final frame
         self.current_step = len(self.layers) - 1  # Set to the last frame

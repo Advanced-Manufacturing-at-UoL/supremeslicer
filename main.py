@@ -7,7 +7,7 @@ School of Mechanical Engineering
 Custom Sandwiched Slicer Tool for slicing and generating toolpaths for the AMPI
 machine with custom tools.
 
-Written by Pralish Satyal
+Written and Designed by Pralish Satyal
 el19ps@leeds.ac.uk
 P.Satyal@leeds.ac.uk
 
