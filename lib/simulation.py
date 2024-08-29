@@ -278,6 +278,7 @@ class SimulationProcessor:
             self.interval = interval
             print(f"The length of segments is: {len(self.segments)}")
 
+            print("About to set coords for e, travel and general\n")
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
             self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
@@ -286,12 +287,20 @@ class SimulationProcessor:
                 print("No segments found in the G-code. Cannot create animation.")
                 return
 
-            # Parse and store vacuum coordinates
+            # Parse and store vacuum coordinates if we have them
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-            self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
-
+            if vacuum_start_line and vacuum_end_line is not None:
+                vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+                print("Just obtained vacuum gcode with logic")
+                _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
+                print("Used parse gcode function")
+                self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
+                print("Obtained final set of vacuum coords")
+            else:
+                self.vacuum_coords = np.array([]) # Empty if no vacuum coords
+                print("No vacuum g-code was found")
+            
+            print("Setting up plot\n")
             # Set up the plot
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111, projection='3d')
