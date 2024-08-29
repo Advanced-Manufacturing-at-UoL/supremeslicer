@@ -260,10 +260,6 @@ class SimulationProcessor:
             f_ecoords = filter_close_coordinates(e_coords_list)
             f_travel_coords = filter_close_coordinates(travel_coords_list)
 
-            print(f"\nLength coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
-            print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
-            print(f"Length e coords:{len(e_coords_list)}\nlength filtered e coords: {len(f_ecoords)}\n")
-
             common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
             travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
             coords = np.array([[x, y, z] for _, x, y, z, _, _ in f_coords])
@@ -286,12 +282,16 @@ class SimulationProcessor:
                 print("No segments found in the G-code. Cannot create animation.")
                 return
 
-            # Parse and store vacuum coordinates
+            # Parse and store vacuum coordinates if we have them
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-            vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-            _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-            self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
-
+            if vacuum_start_line and vacuum_end_line is not None:
+                vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
+                _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
+                self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
+            else:
+                self.vacuum_coords = np.array([]) # Empty if no vacuum coords
+                print("No vacuum g-code was found")
+            
             # Set up the plot
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111, projection='3d')

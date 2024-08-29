@@ -1,7 +1,7 @@
 import os
 
 from lib.utils import Utils
-from lib.super_slicer import SuperSlicer
+from lib.prusa_slicer import PrusaSlicer
 from lib.simulation import SimulationProcessor
 from lib.animation import ToolpathAnimator
 from tools.vacuum_pnp import VacuumPnP
@@ -10,19 +10,10 @@ from tools.vacuum_pnp import VacuumPnP
 class MainEngine:
     """Main Engine Class for running the overall program"""
     def __init__(self):
-        self.start_time = None
-        self.config = Utils.read_yaml(Utils.get_resource_path(r'configs/config.yaml'))
-        self.slicer = SuperSlicer(self.config)    
+        self.config = Utils.read_yaml(r'configs/config.yaml')
+        self.slicer = PrusaSlicer(self.config)    
         self.vacuum_pnp_tool = None
         self.filename = None
-
-    def start(self):
-        """Method to start timer"""
-        self.start_time = Utils.start_timer()
-
-    def stop(self):
-        """Method to stop timer"""
-        Utils.stop_timer(self.start_time)
 
     def _output_doc(self):
         """Output documentation to the user"""
@@ -50,9 +41,9 @@ class MainEngine:
 
     def _run_slicer(self):
         """Run the native Supreme Slicer"""
-        self.start()
+        start_time = Utils.start_timer()
         self.slicer.slice_gcode()
-        self.stop()
+        Utils.stop_timer(start_time)
         print("\n")
 
     def _output_folder(self):
@@ -127,11 +118,15 @@ class MainEngine:
             simulation_processor = SimulationProcessor(self.filename)
 
             if user_in == 1:
+                start_time = Utils.start_timer()
                 simulation_processor.plot_original_toolpath()
                 print("Completed plotting original toolpath.\n")
+                Utils.stop_timer(start_time)
             elif user_in == 2:
+                start_time = Utils.start_timer()
                 simulation_processor.plot_vacuum_toolpath()
                 print("Completed plotting vacuum toolpath.\n")
+                Utils.stop_timer(start_time)
             else:
                 print("Invalid selection. Please choose 1 or 2.\n")
         except ValueError as ve:
@@ -141,7 +136,7 @@ class MainEngine:
         except IOError as ioe:
             raise IOError(f"IO error: {ioe}")
         except Exception as e:
-            raise(f"An unexpected error occurred: {e}")
+            raise Exception(f"An unexpected error occurred: {e}")
 
     def _run_animation(self):
         """Render animation menu for plotting layer by layer animation."""
@@ -155,21 +150,27 @@ class MainEngine:
 
             if user_in == 1:
                 print("Plotting Original toolpath")
+                start_time = Utils.start_timer()
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 animator.animate_toolpath()
+                Utils.stop_timer(start_time)
             elif user_in == 2:
                 print("\nSaving final Layer")
+                start_time = Utils.start_timer()
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
-                file_location = self.output_directory + '/final_layer.gif'
+                file_location = self.output_directory + '/final_layer.png'
                 animator.save_final_layer(Utils.get_resource_path(file_location))
+                Utils.stop_timer(start_time)
             elif user_in == 3:
                 print("\nSaving entire animation. This will take a few minutes.")
+                start_time = Utils.start_timer()
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()
                 file_location = self.output_directory +'/render.gif'
                 animator.save_animation(Utils.get_resource_path(file_location))
+                Utils.stop_timer(start_time)
             else:
                 print("Invalid selection. Please choose 1 or 2.")
         except ValueError as ve:
@@ -179,15 +180,15 @@ class MainEngine:
         except IOError as ioe:
             raise IOError(f"IO error: {ioe}")
         except Exception as e:
-            raise(f"An unexpected error occurred: {e}")
+            raise Exception(f"An unexpected error occurred: {e}")
 
     def _read_config(self):
         """Method to read SupremeSlicer config file"""
         Utils.sleep(1)
-        self.start()
+        start_time = Utils.start_timer()
         print("\n")
         Utils.print_yaml(Utils.get_resource_path(r'configs\config.yaml'))
-        self.stop()
+        Utils.stop_timer(start_time)
         print("\n")
 
     def cli(self):

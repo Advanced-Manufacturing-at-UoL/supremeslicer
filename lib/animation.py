@@ -4,7 +4,7 @@ import re
 import time
 import vtk
 
-# Ensure we mute the shitty warnings
+# Ensure we mute the warnings
 vtk.vtkObject.GlobalWarningDisplayOff()
 
 
@@ -19,12 +19,12 @@ class ToolpathAnimator:
         self.current_step = 0
         self.is_playing = False
         self.slider = None
-        self.show_travel_lines = True
+        self.show_travel_lines = False
+        self.global_bounds = [np.inf, -np.inf, np.inf, -np.inf, np.inf, -np.inf]
 
     def parse_gcode(self):
         """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
         print("Parsing Gcode")
-        start_time = time.time()
         data = {
             'X': [],
             'Y': [],
@@ -75,8 +75,6 @@ class ToolpathAnimator:
                 move_type = 'travel'
 
         self.plot_data = data
-        end_time = time.time()
-        print(f"Time taken to setup animation {round((end_time-start_time),2)}\n")
 
     @staticmethod
     def create_toolpath_mesh(x, y, z, radius, resolution=10):
@@ -88,7 +86,6 @@ class ToolpathAnimator:
 
     def setup_plotter(self):
         """Setup the plotter with widgets for slider and checkbox."""
-        start_time = time.time()
 
         self.plotter = pv.Plotter()
         self.plotter.set_background('white')
@@ -118,6 +115,32 @@ class ToolpathAnimator:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
 
+                        # Update global bounds
+                        bounds = mesh.bounds
+                        self.global_bounds = [
+                            min(self.global_bounds[0], bounds[0]),
+                            max(self.global_bounds[1], bounds[1]),
+                            min(self.global_bounds[2], bounds[2]),
+                            max(self.global_bounds[3], bounds[3]),
+                            min(self.global_bounds[4], bounds[4]),
+                            max(self.global_bounds[5], bounds[5])
+                        ]
+
+        # Set camera zoom level
+        self.plotter.camera.SetPosition(
+            (self.global_bounds[1] - self.global_bounds[0]) / 2,
+            (self.global_bounds[3] - self.global_bounds[2]) / 2,
+            (self.global_bounds[5] - self.global_bounds[4]) * 1.5
+        )
+        self.plotter.camera.SetFocalPoint(
+            (self.global_bounds[1] + self.global_bounds[0]) / 2,
+            (self.global_bounds[3] + self.global_bounds[2]) / 2,
+            (self.global_bounds[5] + self.global_bounds[4]) / 2
+        )
+        #self.plotter.camera.SetViewUp(0, 1, 0)
+        # self.plotter.camera.Zoom(1.5)  # Keep zoom level consistent
+        self.plotter.reset_camera()
+
         # Add slider widget
         def slider_callback(value):
             self.current_step = int(value)
@@ -143,9 +166,6 @@ class ToolpathAnimator:
             position=(0.05, 0.15)
         )
 
-        end_time = time.time()
-        print(f"Time taken to start animation: {round((end_time-start_time),2)}\n")
-
     def update_plot(self):
         """Update the plotter to show the current step based on the checkbox state."""
         self.plotter.clear_actors()  # Clear only the plot data, keeping the axes
@@ -160,6 +180,11 @@ class ToolpathAnimator:
 
         # Update the text to show the current layer
         self.plotter.add_text(f'Layer {self.layers[self.current_step]}', font_size=12, color='black')
+
+        self.plotter.camera.SetViewUp(0, 1, 0)
+        self.plotter.camera.Zoom(1.5)  # Keep zoom level consistent
+        self.plotter.reset_camera()
+
         self.plotter.render()
 
     def animate_toolpath(self):
@@ -216,6 +241,7 @@ class ToolpathAnimator:
                     if len(x) > 1:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
+        
         # Iterate over each layer to update the plot and capture frames
         for layer in range(len(self.layers)):
             self.current_step = layer
@@ -226,12 +252,12 @@ class ToolpathAnimator:
         self.plotter.close()
 
     def save_final_layer(self, filepath, fps=10):
-        """Generate and save the animation as a GIF file."""
+        """Generate and save the final frame as a GIF file."""
         self.plotter = pv.Plotter(off_screen=True)
         self.plotter.set_background('white')
         self.plotter.add_text('Layer 0', font_size=12, color='black')
 
-        self.plotter.open_gif(filepath, fps=fps) # Open GIF Recording
+        #self.plotter.open_gif(filepath, fps=fps) # Open GIF Recording
         self.layers = sorted(set(self.plot_data['layer'])) # Sort the layers
         self.meshes_per_layer = {layer: [] for layer in self.layers} # Create and store meshes/layer
 
@@ -259,7 +285,12 @@ class ToolpathAnimator:
         # Iterate over only the final layer to update the plot and capture the final frame
         self.current_step = len(self.layers) - 1  # Set to the last frame
         self.update_plot()
-        self.plotter.write_frame() # Write the final frame to the GIF
+        
+        
+        self.plotter.screenshot(filepath)
+        self.plotter.camera.SetViewUp(0, 1, 0)
+        self.plotter.camera.Zoom(1.5)  # Keep zoom level consistent
+        self.plotter.reset_camera()
 
-        print(f"Animation saved as {filepath}\n")
+        print(f"Final frame saved as {filepath}\n")
         self.plotter.close()
