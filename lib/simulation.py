@@ -260,10 +260,6 @@ class SimulationProcessor:
             f_ecoords = filter_close_coordinates(e_coords_list)
             f_travel_coords = filter_close_coordinates(travel_coords_list)
 
-            print(f"\nLength coordinates:{len(coordinates)}\nlength filtered coordinates: {len(f_coords)}\n")
-            print(f"Length travel coords:{len(travel_coords_list)}\nlength filtered travel: {len(f_travel_coords)}\n")
-            print(f"Length e coords:{len(e_coords_list)}\nlength filtered e coords: {len(f_ecoords)}\n")
-
             common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in f_ecoords])
             travel_coords = np.array([[x, y, z] for _, x, y, z, _ in f_travel_coords])
             coords = np.array([[x, y, z] for _, x, y, z, _, _ in f_coords])
@@ -278,7 +274,6 @@ class SimulationProcessor:
             self.interval = interval
             print(f"The length of segments is: {len(self.segments)}")
 
-            print("About to set coords for e, travel and general\n")
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
             self.coords_np = np.array([[x, y, z] for _, x, y, z, _, _ in coordinates])
@@ -291,16 +286,12 @@ class SimulationProcessor:
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
             if vacuum_start_line and vacuum_end_line is not None:
                 vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
-                print("Just obtained vacuum gcode with logic")
                 _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
-                print("Used parse gcode function")
                 self.vacuum_coords = np.array([[x, y, z] for _, x, y, z, _, _ in vacuum_coordinates])
-                print("Obtained final set of vacuum coords")
             else:
                 self.vacuum_coords = np.array([]) # Empty if no vacuum coords
                 print("No vacuum g-code was found")
             
-            print("Setting up plot\n")
             # Set up the plot
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111, projection='3d')

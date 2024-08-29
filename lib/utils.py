@@ -63,6 +63,7 @@ class Utils:
     def stop_timer(start_time):
         elapsed_time = time.time() - start_time
         print(f"Elapsed time: {elapsed_time:.2f} seconds")
+        return elapsed_time
 
     @staticmethod
     def sleep(sleep_time):
