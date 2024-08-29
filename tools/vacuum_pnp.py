@@ -120,7 +120,7 @@ TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single
         return layers
 
     def print_injected_gcode(self):
-        """Scans the G-code file for the injected G-code comments and prints the lines between them."""
+        """Scans the G-code file for all injected G-code comments, prints the sections found, and their line numbers."""
         if not self.gcode_content:
             print("Error: G-code content is empty. Please read the G-code file first.")
             return
@@ -128,15 +128,38 @@ TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single
         # Define the start and end markers for the injected G-code
         start_marker = "; VacuumPnP TOOL G CODE INJECTION START"
         end_marker = "; VacuumPnP TOOL G CODE INJECTION END"
-        start_index = self.gcode_content.find(start_marker)
-        end_index = self.gcode_content.find(end_marker)
 
-        if start_index == -1 or end_index == -1:
-            print("No injected G-code found in the G-code file.")
-            return
+        # Read the G-code file lines to get line numbers
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
 
-        # Extract the injected G-code section
-        start_index += len(start_marker)  # Move past the start marker
-        injected_gcode_section = self.gcode_content[start_index:end_index].strip()
+        start_index = 0
+        while True:
+            # Find the start marker
+            while start_index < len(lines) and start_marker not in lines[start_index]:
+                start_index += 1
+            if start_index >= len(lines):
+                break
 
-        print(f"\nInjected G-code:\n{start_marker}\n{injected_gcode_section}\n{end_marker}\n")
+            start_line_number = start_index + 1  # Line numbers are 1-based
+            start_index += 1  # Move to the next line after the start marker
+
+            # Find the end marker after the start marker
+            end_index = start_index
+            while end_index < len(lines) and end_marker not in lines[end_index]:
+                end_index += 1
+
+            if end_index >= len(lines):
+                print(f"Error: Missing end marker for injected G-code starting at line {start_line_number}.")
+                return
+
+            end_line_number = end_index + 1  # Line numbers are 1-based
+
+            # Extract the injected G-code section
+            injected_gcode_section = ''.join(lines[start_index:end_index]).strip()
+            
+            print(f"\nInjected G-code found from line {start_line_number} to {end_line_number}: \n\n{start_marker}\n{injected_gcode_section}\n{end_marker}\n")
+
+            # Move the start_index past the end marker for the next search
+            start_index = end_index + 1
+
