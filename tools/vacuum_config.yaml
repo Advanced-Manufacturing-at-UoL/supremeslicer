@@ -1,9 +1,9 @@
 #vacuum_config.yaml
-zHop_mm: 50.0
-startX: 50.0
-startY: 20.0
+zHop_mm: 100.0
+startX: 100.0
+startY: 250.0
 startZ: 30.0
 suctionState: 1
-endX: 40.0
-endY: 50.0
+endX: 140.0
+endY: 150.0
 endZ: 60.0

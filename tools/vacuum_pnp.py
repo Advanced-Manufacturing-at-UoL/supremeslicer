@@ -53,9 +53,9 @@ TOOL_PICKUP T=2 ; Pickup the vacuum tool
 G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
 G0 Z{self.startZ:.2f} ; Lower Z to start position
 SET_PIN PIN=VACUUM VALUE={self.suctionState} ; Execute suction state
-G0 Z{self.zHop_mm:.2f} ; Make zHop Clearnace so things don't get knocked over
-G0 X{self.endX:.2f} Y{self.endY:.2f}
-G0 Z{self.endZ:.2f} ; Move to endPosition
+G0 Z{self.zHop_mm:.2f} ; Make zHop Clearance so things don't get knocked over
+G0 X{self.endX:.2f} Y{self.endY:.2f} ; Move to endPosition for what we're dropping object to
+G0 Z{self.endZ:.2f} ; Move to height of drop
 SET_PIN PIN=VACUUM VALUE={0.00} ; Stop Suction state
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single extruder
