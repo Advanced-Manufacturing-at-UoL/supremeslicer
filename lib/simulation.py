@@ -296,12 +296,10 @@ class SimulationProcessor:
                 print("No vacuum g-code was found")
             
             # Set up the plot
-            print("Trying to set up plot")
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111, projection='3d')
             self.lines = []
 
-            print("Setting axes limits")
             self.ax.set_xlim([0, 180])
             self.ax.set_ylim([0, 180])
             self.ax.set_zlim([0, 100])
@@ -311,7 +309,6 @@ class SimulationProcessor:
             self.ax.set_title('G-code Toolpath Simulation')
 
             # Create playback controls
-            print("Setting up playback controls")
             ax_play = plt.axes([0.1, 0.02, 0.1, 0.075])
             ax_pause = plt.axes([0.22, 0.02, 0.1, 0.075])
             ax_forward = plt.axes([0.34, 0.02, 0.1, 0.075])
@@ -322,7 +319,6 @@ class SimulationProcessor:
             btn_pause = Button(ax_pause, 'Pause')
             btn_forward = Button(ax_forward, 'Forward')
             btn_backward = Button(ax_backward, 'Backward')
-            print(f"Setting up slider with num_frames equal to {num_frames}")
             self.slider = Slider(ax_slider, 'Frame', 0, num_frames - 1, valinit=0, valstep=1)
 
             btn_play.on_clicked(self.play_animation)

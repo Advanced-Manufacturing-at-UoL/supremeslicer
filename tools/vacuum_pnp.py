@@ -48,6 +48,7 @@ class VacuumPnP:
         """Generates the G-code injection based on the parameters from the YAML configuration."""
         self.injected_gcode = f""";-----------------------------------------------
 ; VacuumPnP TOOL G CODE INJECTION START
+G90 ; Ensure we're using absolute positioning rather than relative
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=2 ; Pickup the vacuum tool
 G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
@@ -59,6 +60,7 @@ G0 Z{self.endZ:.2f} ; Move to height of drop
 SET_PIN PIN=VACUUM VALUE={0.00} ; Stop Suction state
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single extruder
+G91 ; Set back to relative positioning 
 ; VacuumPnP TOOL G CODE INJECTION END
 ;-----------------------------------------------
 """
