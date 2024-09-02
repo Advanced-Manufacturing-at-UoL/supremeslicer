@@ -282,8 +282,11 @@ class SimulationProcessor:
                 print("No segments found in the G-code. Cannot create animation.")
                 return
 
+            print("Gonna check if we have vacuum gcode")
             # Parse and store vacuum coordinates if we have them
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
+            print(vacuum_start_line)
+            print(vacuum_end_line)
             if vacuum_start_line and vacuum_end_line is not None:
                 vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
                 _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
@@ -296,6 +299,7 @@ class SimulationProcessor:
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111, projection='3d')
             self.lines = []
+
             self.ax.set_xlim([0, 180])
             self.ax.set_ylim([0, 180])
             self.ax.set_zlim([0, 100])

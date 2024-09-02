@@ -48,13 +48,19 @@ class VacuumPnP:
         """Generates the G-code injection based on the parameters from the YAML configuration."""
         self.injected_gcode = f""";-----------------------------------------------
 ; VacuumPnP TOOL G CODE INJECTION START
+G90 ; Ensure we're using absolute positioning rather than relative
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
-G0 X{self.startX:.2f} Y{self.startY:.2f}
-G0 Z{self.startZ:.2f} ; Move to startPosition
-M98 P{self.suctionState} ; Execute suction state
-G0 X{self.endX:.2f} Y{self.endY:.2f}
-G0 Z{self.endZ:.2f} ; Move to endPosition
+TOOL_PICKUP T=2 ; Pickup the vacuum tool
+G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
+G0 Z{self.startZ:.2f} ; Lower Z to start position
+SET_PIN PIN=VACUUM VALUE={self.suctionState} ; Execute suction state
+G0 Z{self.zHop_mm:.2f} ; Make zHop Clearance so things don't get knocked over
+G0 X{self.endX:.2f} Y{self.endY:.2f} ; Move to endPosition for what we're dropping object to
+G0 Z{self.endZ:.2f} ; Move to height of drop
+SET_PIN PIN=VACUUM VALUE={0.00} ; Stop Suction state
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
+TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single extruder
+G91 ; Set back to relative positioning 
 ; VacuumPnP TOOL G CODE INJECTION END
 ;-----------------------------------------------
 """
@@ -116,7 +122,7 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         return layers
 
     def print_injected_gcode(self):
-        """Scans the G-code file for the injected G-code comments and prints the lines between them."""
+        """Scans the G-code file for all injected G-code comments, prints the sections found, and their line numbers."""
         if not self.gcode_content:
             print("Error: G-code content is empty. Please read the G-code file first.")
             return
@@ -124,15 +130,38 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
         # Define the start and end markers for the injected G-code
         start_marker = "; VacuumPnP TOOL G CODE INJECTION START"
         end_marker = "; VacuumPnP TOOL G CODE INJECTION END"
-        start_index = self.gcode_content.find(start_marker)
-        end_index = self.gcode_content.find(end_marker)
 
-        if start_index == -1 or end_index == -1:
-            print("No injected G-code found in the G-code file.")
-            return
+        # Read the G-code file lines to get line numbers
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
 
-        # Extract the injected G-code section
-        start_index += len(start_marker)  # Move past the start marker
-        injected_gcode_section = self.gcode_content[start_index:end_index].strip()
+        start_index = 0
+        while True:
+            # Find the start marker
+            while start_index < len(lines) and start_marker not in lines[start_index]:
+                start_index += 1
+            if start_index >= len(lines):
+                break
 
-        print(f"\nInjected G-code:\n{start_marker}\n{injected_gcode_section}\n{end_marker}\n")
+            start_line_number = start_index + 1  # Line numbers are 1-based
+            start_index += 1  # Move to the next line after the start marker
+
+            # Find the end marker after the start marker
+            end_index = start_index
+            while end_index < len(lines) and end_marker not in lines[end_index]:
+                end_index += 1
+
+            if end_index >= len(lines):
+                print(f"Error: Missing end marker for injected G-code starting at line {start_line_number}.")
+                return
+
+            end_line_number = end_index + 1  # Line numbers are 1-based
+
+            # Extract the injected G-code section
+            injected_gcode_section = ''.join(lines[start_index:end_index]).strip()
+            
+            print(f"\nInjected G-code found from line {start_line_number} to {end_line_number}: \n\n{start_marker}\n{injected_gcode_section}\n{end_marker}\n")
+
+            # Move the start_index past the end marker for the next search
+            start_index = end_index + 1
+
