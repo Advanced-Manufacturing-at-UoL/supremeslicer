@@ -266,7 +266,7 @@ class SimulationProcessor:
             self.segments = self.split_into_segments(f_coords)
             num_frames = len(self.segments)
             self.interval = interval
-            print(f"The length of segments is: {len(self.segments)}")
+            print(f"The number of frames is: {len(self.segments)}")
 
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
@@ -335,7 +335,7 @@ class SimulationProcessor:
             self.segments = vacuum_coords
             num_frames = len(self.segments)  # Number of frames is the length of the vacuum path
             self.interval = interval
-            print(f"The length of segments is: {num_frames}")
+            print(f"The number of frames is: {num_frames}")
 
             if num_frames == 0:
                 print("No segments found in the vacuum G-code. Cannot create animation.")
