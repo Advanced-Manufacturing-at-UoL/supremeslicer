@@ -189,8 +189,6 @@ class SimulationProcessor:
         """Pause the animation and display the mesh."""
         if self.animating:
             self.animating = False
-            if hasattr(self, 'ani'):
-                self.ani.event_source.stop()
             self.is_mesh_displayed = True  # Show mesh when paused
             self.update_plot(self.current_frame)  # Update plot to show mesh
 
@@ -203,15 +201,11 @@ class SimulationProcessor:
                 self.current_frame = int(self.slider.val)
             except ValueError:
                 self.current_frame = 0
-            if hasattr(self, 'ani'):
-                self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
                 self.fig, self.update_plot, frames=range(self.current_frame, len(self.segments)),
                 interval=self.interval, blit=False, repeat=False
             )
             self.fig.canvas.draw_idle()
-        else:
-            self.ani.event_source.start()
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -282,11 +276,8 @@ class SimulationProcessor:
                 print("No segments found in the G-code. Cannot create animation.")
                 return
 
-            print("Gonna check if we have vacuum gcode")
             # Parse and store vacuum coordinates if we have them
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-            print(vacuum_start_line)
-            print(vacuum_end_line)
             if vacuum_start_line and vacuum_end_line is not None:
                 vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
                 _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
