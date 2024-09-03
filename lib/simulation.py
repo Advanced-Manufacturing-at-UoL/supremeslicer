@@ -556,6 +556,52 @@ class SimulationProcessor:
         }
 
         return top_layer_info
+    
+    def get_centre_of_mass(self):
+        """Method to get centre of mass"""
+
+        e_coords, _, _ = self.parse_gcode(self.gcode)
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Define constants
+        filament_diameter = 1.75  # mm (adjust as necessary)
+        filament_area = np.pi * (filament_diameter / 2) ** 2  # Cross-sectional area in mm^2
+
+        total_mass = 0
+        x_mass_sum = 0
+        y_mass_sum = 0
+        z_mass_sum = 0
+
+        previous_coord = None
+
+        for _, x, y, z, _ in e_coords:
+            if previous_coord:
+                # Calculate the distance between the previous and current coordinates
+                distance = np.sqrt((x - previous_coord[0])**2 + 
+                                   (y - previous_coord[1])**2 + 
+                                   (z - previous_coord[2])**2)
+                # Assume a constant filament density; mass = volume * density with constant density
+                # Volume for each segment = filament_area * distance
+                mass = filament_area * distance
+
+                # Sum the weighted coordinates
+                x_mass_sum += x * mass
+                y_mass_sum += y * mass
+                z_mass_sum += z * mass
+                total_mass += mass
+            
+            previous_coord = (x, y, z)
+
+        # Calculate the center of mass
+        x_com = x_mass_sum / total_mass
+        y_com = y_mass_sum / total_mass
+        z_com = z_mass_sum / total_mass
+
+        return x_com, y_com, z_com
+
 
 def filter_close_coordinates(coordinates, threshold=0):
     """Filter out coordinates too close to each other based on threshold."""
