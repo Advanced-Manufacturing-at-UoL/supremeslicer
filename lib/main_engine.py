@@ -1,6 +1,7 @@
 import os
 
 from lib.utils import Utils
+from lib.stl_viewer import STLViewer
 from lib.prusa_slicer import PrusaSlicer
 from lib.simulation import SimulationProcessor
 from lib.animation import ToolpathAnimator
@@ -166,6 +167,22 @@ class MainEngine:
         except Exception as e:
             raise Exception(f"An unexpected error occurred: {e}")
 
+    def _run_stl_viewer(self):
+        """Render the stl visually"""
+        try:
+            # Define the print space (e.g., from Prusa config, in mm)
+            print_space = {
+                "x": 250,
+                "y": 210,
+                "z": 210
+            }
+            stl_file = "input/benchy.stl"
+            viewer = STLViewer(stl_file, print_space)
+            viewer.start()
+
+        except Exception as e:
+            raise Exception(f"An unexpected error occurred: {e}")
+
     def _run_simulation(self):
         """Render simulation menu for simulating toolpaths"""
         try:
@@ -263,9 +280,10 @@ class MainEngine:
             print("2. Slice a g-code file")
             print("3. Access tools")
             print("4. Obtain Part informaiton")
-            print("5. Create Simulation")
-            print("6. Render Animation")
-            print("7. Exit\n")
+            print("5. Run STL Viewer")
+            print("6. Create Simulation")
+            print("7. Render Animation")
+            print("8. Exit\n")
 
             try:
                 user_in = int(input("Please select an option\n"))
@@ -282,13 +300,14 @@ class MainEngine:
             elif user_in == 3:
                 self._run_tools()
             elif user_in == 4:
-                print("Obtaining part infor")
                 self._get_part_info()
             elif user_in == 5:
-                self._run_simulation()
+                self._run_stl_viewer()
             elif user_in == 6:
-                self._run_animation()
+                self._run_simulation()
             elif user_in == 7:
+                self._run_animation()
+            elif user_in == 8:
                 print("Exiting SupremeSlicer\n")
                 Utils.exit_on('Thank you\n')
             else:
