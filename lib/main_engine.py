@@ -114,6 +114,7 @@ class MainEngine:
             print("2. Get height of part from max Z")
             print("3. Get bounding box of the part")
             print("4. Get part's top layer position for Vacuum tool")
+            print("5. Get centre of mass for the part")
 
             user_in = int(input("Please select an option.\n"))
             self._output_folder()
@@ -146,7 +147,14 @@ class MainEngine:
                 if top_layer:
                     print(f"Top layer of the part: layer={top_layer}")
                 print("Obtained part top-layer info.\n")
-                Utils.stop_timer(start_time)                    
+                Utils.stop_timer(start_time)    
+            elif user_in == 5:
+                start_time = Utils.start_timer()
+                centre_of_mass = simulation_processor.get_centre_of_mass()
+                if centre_of_mass:
+                    print(f"Centre of mass of the part: {centre_of_mass}")
+                print("Obtained part centre of mass info.\n")
+                Utils.stop_timer(start_time)                   
             else:
                 print("Invalid selection. Please choose from Option 1-3\n")             
         except ValueError as ve:
