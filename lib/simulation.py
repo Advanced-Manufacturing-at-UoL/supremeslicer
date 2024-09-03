@@ -189,8 +189,6 @@ class SimulationProcessor:
         """Pause the animation and display the mesh."""
         if self.animating:
             self.animating = False
-            if hasattr(self, 'ani'):
-                self.ani.event_source.stop()
             self.is_mesh_displayed = True  # Show mesh when paused
             self.update_plot(self.current_frame)  # Update plot to show mesh
 
@@ -203,15 +201,11 @@ class SimulationProcessor:
                 self.current_frame = int(self.slider.val)
             except ValueError:
                 self.current_frame = 0
-            if hasattr(self, 'ani'):
-                self.ani.event_source.stop()
             self.ani = animation.FuncAnimation(
                 self.fig, self.update_plot, frames=range(self.current_frame, len(self.segments)),
                 interval=self.interval, blit=False, repeat=False
             )
             self.fig.canvas.draw_idle()
-        else:
-            self.ani.event_source.start()
 
     def update_slider(self, val):
         """Update the plot based on the slider value."""
@@ -272,7 +266,7 @@ class SimulationProcessor:
             self.segments = self.split_into_segments(f_coords)
             num_frames = len(self.segments)
             self.interval = interval
-            print(f"The length of segments is: {len(self.segments)}")
+            print(f"The number of frames is: {len(self.segments)}")
 
             self.common_e_coords_np = np.array([[x, y, z] for _, x, y, z, _ in e_coords_list])
             self.travel_coords_np = np.array([[x, y, z] for _, x, y, z, _ in travel_coords_list])
@@ -282,11 +276,8 @@ class SimulationProcessor:
                 print("No segments found in the G-code. Cannot create animation.")
                 return
 
-            print("Gonna check if we have vacuum gcode")
             # Parse and store vacuum coordinates if we have them
             vacuum_start_line, vacuum_end_line = self.find_vacuum_gcode_lines()
-            print(vacuum_start_line)
-            print(vacuum_end_line)
             if vacuum_start_line and vacuum_end_line is not None:
                 vacuum_gcode = self.gcode[vacuum_start_line:vacuum_end_line + 1]
                 _, _, vacuum_coordinates = self.parse_gcode(vacuum_gcode)
@@ -344,7 +335,7 @@ class SimulationProcessor:
             self.segments = vacuum_coords
             num_frames = len(self.segments)  # Number of frames is the length of the vacuum path
             self.interval = interval
-            print(f"The length of segments is: {num_frames}")
+            print(f"The number of frames is: {num_frames}")
 
             if num_frames == 0:
                 print("No segments found in the vacuum G-code. Cannot create animation.")
@@ -455,6 +446,116 @@ class SimulationProcessor:
         except Exception as e:
             print("Error within get_vacuum_coordinates")
             print(f"Error occured {e}")
+
+    def get_part_info(self):
+        """Obtain the centre of the part"""
+        e_coords, _, _ = self.parse_gcode(self.gcode)  # Only need extrusion coordinates
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Extract X, Y, Z coordinates from e_coords
+        x_vals = [coord[1] for coord in e_coords]
+        y_vals = [coord[2] for coord in e_coords]
+        z_vals = [coord[3] for coord in e_coords]
+
+        # Calculate the centroid
+        x_center = sum(x_vals) / len(x_vals)
+        y_center = sum(y_vals) / len(y_vals)
+        z_center = sum(z_vals) / len(z_vals)
+
+        return x_center, y_center, z_center
+    
+    def get_part_height(self):
+        """Get the height of the object (top layer's Z value)."""
+        e_coords, _, _ = self.parse_gcode(self.gcode)
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Extract Z coordinates from e_coords and find the maximum (highest layer)
+        z_vals = [coord[3] for coord in e_coords]
+        max_height = max(z_vals)
+
+        return max_height
+
+    def get_bounding_box(self):
+        """Calculate the bounding box of the part."""
+        e_coords, _, _ = self.parse_gcode(self.gcode)  # Only need extrusion coordinates
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Extract X, Y, Z coordinates from e_coords
+        x_vals = [coord[1] for coord in e_coords]
+        y_vals = [coord[2] for coord in e_coords]
+        z_vals = [coord[3] for coord in e_coords]
+
+        # Calculate the bounding box (min/max of each axis)
+        x_min, x_max = min(x_vals), max(x_vals)
+        y_min, y_max = min(y_vals), max(y_vals)
+        z_min, z_max = min(z_vals), max(z_vals)
+
+        bounding_box = {
+            'x_min': x_min,
+            'x_max': x_max,
+            'y_min': y_min,
+            'y_max': y_max,
+            'z_min': z_min,
+            'z_max': z_max,
+            'width': x_max - x_min,
+            'depth': y_max - y_min,
+            'height': z_max - z_min
+        }
+
+        return bounding_box
+
+    def get_top_layer_info(self):
+        """Retrieve information about the top layer of the printed object."""
+        e_coords, _, _ = self.parse_gcode(self.gcode)
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Find the maximum Z value
+        max_z = max(coord[3] for coord in e_coords)
+
+        # Filter coordinates that are on the top layer
+        top_layer_coords = [coord for coord in e_coords if coord[3] == max_z]
+
+        if not top_layer_coords:
+            print("No coordinates found for the top layer.")
+            return None
+
+        # Extract X and Y values for the top layer
+        x_vals = [coord[1] for coord in top_layer_coords]
+        y_vals = [coord[2] for coord in top_layer_coords]
+
+        # Calculate centroid for top layer
+        x_center = sum(x_vals) / len(x_vals)
+        y_center = sum(y_vals) / len(y_vals)
+
+        # Calculate min and max for X and Y on the top layer
+        min_x, max_x = min(x_vals), max(x_vals)
+        min_y, max_y = min(y_vals), max(y_vals)
+
+        top_layer_info = {
+            'z_height': max_z,
+            'x_center': x_center,
+            'y_center': y_center,
+            'min_x': min_x,
+            'max_x': max_x,
+            'min_y': min_y,
+            'max_y': max_y,
+            'width': max_x - min_x,
+            'depth': max_y - min_y
+        }
+
+        return top_layer_info
 
 def filter_close_coordinates(coordinates, threshold=0):
     """Filter out coordinates too close to each other based on threshold."""

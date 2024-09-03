@@ -24,7 +24,6 @@ class ToolpathAnimator:
 
     def parse_gcode(self):
         """Parse the G-code file and extract X, Y, Z coordinates, layer info, and move types."""
-        print("Parsing Gcode")
         data = {
             'X': [],
             'Y': [],
