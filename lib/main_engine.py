@@ -170,16 +170,8 @@ class MainEngine:
     def _run_stl_viewer(self):
         """Render the stl visually"""
         try:
-            # Define the print space (e.g., from Prusa config, in mm)
-            print_space = {
-                "x": 250,
-                "y": 210,
-                "z": 210
-            }
-            stl_file = "input/benchy.stl"
-            viewer = STLViewer(stl_file, print_space)
+            viewer = STLViewer("input/benchy.stl")
             viewer.start()
-
         except Exception as e:
             raise Exception(f"An unexpected error occurred: {e}")
 
