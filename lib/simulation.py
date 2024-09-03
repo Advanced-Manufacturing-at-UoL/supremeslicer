@@ -456,6 +456,116 @@ class SimulationProcessor:
             print("Error within get_vacuum_coordinates")
             print(f"Error occured {e}")
 
+    def get_part_info(self):
+        """Obtain the centre of the part"""
+        e_coords, _, _ = self.parse_gcode(self.gcode)  # Only need extrusion coordinates
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Extract X, Y, Z coordinates from e_coords
+        x_vals = [coord[1] for coord in e_coords]
+        y_vals = [coord[2] for coord in e_coords]
+        z_vals = [coord[3] for coord in e_coords]
+
+        # Calculate the centroid
+        x_center = sum(x_vals) / len(x_vals)
+        y_center = sum(y_vals) / len(y_vals)
+        z_center = sum(z_vals) / len(z_vals)
+
+        return x_center, y_center, z_center
+    
+    def get_part_height(self):
+        """Get the height of the object (top layer's Z value)."""
+        e_coords, _, _ = self.parse_gcode(self.gcode)
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Extract Z coordinates from e_coords and find the maximum (highest layer)
+        z_vals = [coord[3] for coord in e_coords]
+        max_height = max(z_vals)
+
+        return max_height
+
+    def get_bounding_box(self):
+        """Calculate the bounding box of the part."""
+        e_coords, _, _ = self.parse_gcode(self.gcode)  # Only need extrusion coordinates
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Extract X, Y, Z coordinates from e_coords
+        x_vals = [coord[1] for coord in e_coords]
+        y_vals = [coord[2] for coord in e_coords]
+        z_vals = [coord[3] for coord in e_coords]
+
+        # Calculate the bounding box (min/max of each axis)
+        x_min, x_max = min(x_vals), max(x_vals)
+        y_min, y_max = min(y_vals), max(y_vals)
+        z_min, z_max = min(z_vals), max(z_vals)
+
+        bounding_box = {
+            'x_min': x_min,
+            'x_max': x_max,
+            'y_min': y_min,
+            'y_max': y_max,
+            'z_min': z_min,
+            'z_max': z_max,
+            'width': x_max - x_min,
+            'depth': y_max - y_min,
+            'height': z_max - z_min
+        }
+
+        return bounding_box
+
+    def get_top_layer_info(self):
+        """Retrieve information about the top layer of the printed object."""
+        e_coords, _, _ = self.parse_gcode(self.gcode)
+
+        if not e_coords:
+            print("No extrusion coordinates found in the G-code.")
+            return None
+
+        # Find the maximum Z value
+        max_z = max(coord[3] for coord in e_coords)
+
+        # Filter coordinates that are on the top layer
+        top_layer_coords = [coord for coord in e_coords if coord[3] == max_z]
+
+        if not top_layer_coords:
+            print("No coordinates found for the top layer.")
+            return None
+
+        # Extract X and Y values for the top layer
+        x_vals = [coord[1] for coord in top_layer_coords]
+        y_vals = [coord[2] for coord in top_layer_coords]
+
+        # Calculate centroid for top layer
+        x_center = sum(x_vals) / len(x_vals)
+        y_center = sum(y_vals) / len(y_vals)
+
+        # Calculate min and max for X and Y on the top layer
+        min_x, max_x = min(x_vals), max(x_vals)
+        min_y, max_y = min(y_vals), max(y_vals)
+
+        top_layer_info = {
+            'z_height': max_z,
+            'x_center': x_center,
+            'y_center': y_center,
+            'min_x': min_x,
+            'max_x': max_x,
+            'min_y': min_y,
+            'max_y': max_y,
+            'width': max_x - min_x,
+            'depth': max_y - min_y
+        }
+
+        return top_layer_info
+
 def filter_close_coordinates(coordinates, threshold=0):
     """Filter out coordinates too close to each other based on threshold."""
     try:

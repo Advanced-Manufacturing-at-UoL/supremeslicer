@@ -107,6 +107,57 @@ class MainEngine:
         else:
             print("\nTool not programmed yet. Sorry!\n")
 
+    def _get_part_info(self):
+        """Method to get part information"""
+        try:
+            print("1. Get estimated individual part centre via avg. values")
+            print("2. Get height of part from max Z")
+            print("3. Get bounding box of the part")
+            print("4. Get part's top layer position for Vacuum tool")
+
+            user_in = int(input("Please select an option.\n"))
+            self._output_folder()
+            simulation_processor = SimulationProcessor(self.filename)
+
+            if user_in == 1:
+                start_time = Utils.start_timer()
+                centre = simulation_processor.get_part_info()
+                if centre:
+                    print(f"Center of the part: X={centre[0]:.2f}, Y={centre[1]:.2f}, Z={centre[2]:.2f}")
+                print("Obtained part information.\n")
+                Utils.stop_timer(start_time)
+            elif user_in == 2:
+                start_time = Utils.start_timer()
+                height = simulation_processor.get_part_height()
+                if height:
+                    print(f"Height of the part: Z={height:.2f}")
+                print("Obtained part height.\n")
+                Utils.stop_timer(start_time)
+            elif user_in == 3:
+                start_time = Utils.start_timer()
+                bounding_box = simulation_processor.get_bounding_box()
+                if bounding_box:
+                    print(f"Bounding box of the part: box={bounding_box}")
+                print("Obtained part bounding box.\n")
+                Utils.stop_timer(start_time)
+            elif user_in == 4:
+                start_time = Utils.start_timer()
+                top_layer = simulation_processor.get_top_layer_info()
+                if top_layer:
+                    print(f"Top layer of the part: layer={top_layer}")
+                print("Obtained part top-layer info.\n")
+                Utils.stop_timer(start_time)                    
+            else:
+                print("Invalid selection. Please choose from Option 1-3\n")             
+        except ValueError as ve:
+            raise ValueError(f"Value error: {ve}")
+        except FileNotFoundError as fnfe:
+            raise FileNotFoundError(f"File not found error: {fnfe}")
+        except IOError as ioe:
+            raise IOError(f"IO error: {ioe}")
+        except Exception as e:
+            raise Exception(f"An unexpected error occurred: {e}")
+
     def _run_simulation(self):
         """Render simulation menu for simulating toolpaths"""
         try:
@@ -203,9 +254,10 @@ class MainEngine:
             print("1. Read Config file")
             print("2. Slice a g-code file")
             print("3. Access tools")
-            print("4. Create Simulation")
-            print("5. Render Animation")
-            print("6. Exit\n")
+            print("4. Obtain Part informaiton")
+            print("5. Create Simulation")
+            print("6. Render Animation")
+            print("7. Exit\n")
 
             try:
                 user_in = int(input("Please select an option\n"))
@@ -222,10 +274,13 @@ class MainEngine:
             elif user_in == 3:
                 self._run_tools()
             elif user_in == 4:
-                self._run_simulation()
+                print("Obtaining part infor")
+                self._get_part_info()
             elif user_in == 5:
-                self._run_animation()
+                self._run_simulation()
             elif user_in == 6:
+                self._run_animation()
+            elif user_in == 7:
                 print("Exiting SupremeSlicer\n")
                 Utils.exit_on('Thank you\n')
             else:
