@@ -170,7 +170,8 @@ class MainEngine:
     def _run_stl_viewer(self):
         """Render the stl visually"""
         try:
-            viewer = STLViewer("input/benchy.stl")
+            bed_shape = "20x75,250x75,250x250,20x250"
+            viewer = STLViewer("input/benchy.stl", bed_shape)
             viewer.start()
         except Exception as e:
             raise Exception(f"An unexpected error occurred: {e}")
