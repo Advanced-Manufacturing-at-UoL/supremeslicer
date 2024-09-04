@@ -82,7 +82,6 @@ class MainEngine:
         user_in = int(input())
 
         if user_in == 1:
-
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.generate_gcode()
             height = float(input("Enter the height to inject the G-code: "))
@@ -90,7 +89,6 @@ class MainEngine:
             self.vacuum_pnp_tool.inject_gcode_at_height(height, output_path)
 
         elif user_in == 2:
-
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.print_injected_gcode()
 
@@ -108,6 +106,8 @@ class MainEngine:
                 config['startX'] = f"{picked_position[0]:.3f}"
                 config['startY'] = f"{picked_position[1]:.3f}"
                 config['startZ'] = f"{picked_position[2]:.3f}"
+
+                # coordinates = config['startX'], config['startY'], config['startZ']
 
                 # Preparation to write_yaml_function
                 key_order = [
@@ -130,6 +130,9 @@ class MainEngine:
                 self.vacuum_pnp_tool.load_config()
                 self.vacuum_pnp_tool.read_gcode()
                 self.vacuum_pnp_tool.generate_gcode()
+
+                # Inject the g-code at the layer corresponding to that coordinate
+                #self.vacuum_pnp_tool.inject_gcode_given_coordinates(output_directory)
         else:
             print("Invalid option. Please select between 1-3.")
 

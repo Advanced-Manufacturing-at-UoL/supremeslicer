@@ -122,7 +122,8 @@ class STLViewer:
         picked_position = picker.GetPickPosition()
 
         if picker.GetActor() is not None:
-            print(f"Picked position: {picked_position:.3f}\n")
+    
+            print(f"Picked position: {picked_position[0]:.3f}, {picked_position[1]:.3f}, {picked_position[2]:.3f}\n")
             self.marker_actor.SetPosition(picked_position)
             self.selected_point = picked_position
 
