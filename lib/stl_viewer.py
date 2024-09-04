@@ -122,10 +122,14 @@ class STLViewer:
         picked_position = picker.GetPickPosition()
 
         if picker.GetActor() is not None:
-            print(f"Picked position: {picked_position}")
+            print(f"Picked position: {picked_position:.3f}\n")
             self.marker_actor.SetPosition(picked_position)
+            self.selected_point = picked_position
 
         self.interactor.GetInteractorStyle().OnLeftButtonDown()  # Call the base class method to ensure default behavior
 
     def start(self):
         self.interactor.Start()
+
+    def get_selected_point(self):
+        return self.selected_point

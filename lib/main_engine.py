@@ -72,24 +72,66 @@ class MainEngine:
         print(f"Output directory is:{output_directory}")
         print(f"Found G-code file: {self.filename}")
 
-        self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
+        
 
         print("\nWould you like to...")
         print("1. Generate and inject Gcode")
         print("2. Read Gcode file output")
-
+        print("3. Render STL Viewer and auto-inject coordinate")
+        self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
         user_in = int(input())
+
         if user_in == 1:
+
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.generate_gcode()
             height = float(input("Enter the height to inject the G-code: "))
             output_path = output_directory
             self.vacuum_pnp_tool.inject_gcode_at_height(height, output_path)
+
         elif user_in == 2:
+
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.print_injected_gcode()
+
+        elif user_in == 3:
+            bed_shape = "20x75,250x75,250x250,20x250"
+            viewer = STLViewer("input/benchy.stl", bed_shape)
+            viewer.start()
+
+            picked_position = viewer.get_selected_point()
+            if picked_position:
+                print(f"Selected position: {picked_position}")
+
+                # Update vacuum_config.yaml with the picked position
+                config = Utils.read_yaml(config_file) # Read the file again
+                config['startX'] = f"{picked_position[0]:.3f}"
+                config['startY'] = f"{picked_position[1]:.3f}"
+                config['startZ'] = f"{picked_position[2]:.3f}"
+
+                # Preparation to write_yaml_function
+                key_order = [
+                    'zHop_mm',
+                    'startX',
+                    'startY',
+                    'startZ',
+                    'suctionState',
+                    'endX',
+                    'endY',
+                    'endZ'
+                ]
+
+                # Update configuration
+                Utils.write_yaml(config_file, config, key_order)
+
+                print("Configuration updated with the selected position.")
+
+                # Continue with the existing functionality
+                self.vacuum_pnp_tool.load_config()
+                self.vacuum_pnp_tool.read_gcode()
+                self.vacuum_pnp_tool.generate_gcode()
         else:
-            print("Invalid option. Please select 1 or 2.")
+            print("Invalid option. Please select between 1-3.")
 
     def _run_tools(self):
         """Render Tool Option Menu"""

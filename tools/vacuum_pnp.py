@@ -18,14 +18,14 @@ class VacuumPnP:
         """Loads the parameters from the YAML configuration file."""
         try:
             config = Utils.read_yaml(self.config_file)
-            self.zHop_mm = config.get('zHop_mm', 5.0)
-            self.startX = config.get('startX', 10.0)
-            self.startY = config.get('startY', 20.0)
-            self.startZ = config.get('startZ', 30.0)
-            self.suctionState = config.get('suctionState', 1)
-            self.endX = config.get('endX', 40.0)
-            self.endY = config.get('endY', 50.0)
-            self.endZ = config.get('endZ', 60.0)
+            self.zHop_mm = config.get('zHop_mm', 100.0)
+            self.startX = config.get('startX', 100.0)
+            self.startY = config.get('startY', 100.0)
+            self.startZ = config.get('startZ', 100.0)
+            self.suctionState = config.get('suctionState', 0)
+            self.endX = config.get('endX', 150.0)
+            self.endY = config.get('endY', 150.0)
+            self.endZ = config.get('endZ', 150.0)
 
             print("Configuration loaded successfully.")
         except FileNotFoundError:
