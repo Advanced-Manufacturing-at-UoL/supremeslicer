@@ -1,7 +1,6 @@
 import os
-
+import math
 from lib.utils import Utils
-
 
 class VacuumPnP:
     """Class for handling functions for the VacuumPnP tool"""
@@ -18,20 +17,20 @@ class VacuumPnP:
         """Loads the parameters from the YAML configuration file."""
         try:
             config = Utils.read_yaml(self.config_file)
-            self.zHop_mm = config.get('zHop_mm', 5.0)
-            self.startX = config.get('startX', 10.0)
-            self.startY = config.get('startY', 20.0)
-            self.startZ = config.get('startZ', 30.0)
-            self.suctionState = config.get('suctionState', 1)
-            self.endX = config.get('endX', 40.0)
-            self.endY = config.get('endY', 50.0)
-            self.endZ = config.get('endZ', 60.0)
+            self.zHop_mm = config.get('zHop_mm', 100.0)
+            self.startX = config.get('startX', 100.0)
+            self.startY = config.get('startY', 100.0)
+            self.startZ = config.get('startZ', 100.0)
+            self.suctionState = config.get('suctionState', 0)
+            self.endX = config.get('endX', 150.0)
+            self.endY = config.get('endY', 150.0)
+            self.endZ = config.get('endZ', 150.0)
 
             print("Configuration loaded successfully.")
         except FileNotFoundError:
             raise FileNotFoundError(f"Error: Configuration file not found: {self.config_file}")
         except Exception as e:
-            raise(f"Error: {e}")
+            raise Exception(f"Error: {e}")
 
     def read_gcode(self):
         """Reads the G-code file and stores its content."""
@@ -69,7 +68,6 @@ G91 ; Set back to relative positioning
 
     def inject_gcode_at_height(self, target_height, output_path):
         """Injects the generated G-code at the specified height into a new file."""
-        output_path = output_path
         layers = self._height_parser()
 
         if not layers:
@@ -88,7 +86,7 @@ G91 ; Set back to relative positioning
         injection_point = layers[closest_height]
         print(f"Injecting at closest height: {closest_height} (Layer Change at line {injection_point})")
 
-        with open(self.filename, 'r') as f: # Read the G-code content
+        with open(self.filename, 'r') as f:
             lines = f.readlines()
 
         custom_gcode_lines = self.injected_gcode.splitlines()
@@ -96,12 +94,91 @@ G91 ; Set back to relative positioning
 
         # Define the output path
         output_file = Utils.get_resource_path(os.path.join(output_path, os.path.basename(self.filename)))
-        output_file = os.path.join(output_file)
         
-        with open(output_file, 'w') as f: # Write the modified G-code to the output file
+        with open(output_file, 'w') as f:
             f.writelines(lines)
 
         print(f"G-code injected and saved to {output_file}\n")
+    
+    def inject_gcode_given_coordinates(self, output_path):
+        """Injects the generated G-code at the closest line based on user-provided coordinates into a new file."""
+        if not self.gcode_content:
+            print("Error: G-code content is empty. Please read the G-code file first.")
+            return
+
+        if not self.injected_gcode:
+            print("Error: No G-code injection generated. Please generate G-code first.")
+            return
+
+        # Coordinates to inject the G-code
+        target_x = self.startX
+        target_y = self.startY
+        target_z = self.startZ
+
+        print("The targets that we have are")
+        print(f"G1 X{target_x} Y{target_y} Z{target_z}")
+
+        # Find the closest line to the target coordinates
+        injection_point = self._find_closest_line(target_x, target_y, target_z)
+        if injection_point == -1:
+            print("Error: Could not find a suitable injection point based on coordinates.")
+            return
+
+        print(f"Injecting at closest line: {injection_point} (Closest coordinates)")
+
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
+
+        custom_gcode_lines = self.injected_gcode.splitlines()
+        lines.insert(injection_point + 1, '\n'.join(custom_gcode_lines) + '\n')
+
+        # Define the output path
+        output_file = Utils.get_resource_path(os.path.join(output_path, os.path.basename(self.filename)))
+        
+        with open(output_file, 'w') as f:
+            f.writelines(lines)
+
+        print(f"G-code injected and saved to {output_file}\n")
+
+    def _find_closest_line(self, target_x, target_y, target_z):
+        """
+        Finds the closest line in the G-code to the given coordinates (x, y, z).
+        Returns the line index where the closest coordinates are found.
+        """
+        closest_distance = float('inf')
+        closest_index = -1
+
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                if line.startswith('G0') or line.startswith('G1'):
+                    coords = self._parse_gcode_line(line)
+                    if coords:
+                        x, y, z = coords
+                        distance = abs(x - target_x) + abs(y - target_y) + abs(z - target_z)
+                        if distance < closest_distance:
+                            closest_distance = distance
+                            closest_index = i
+
+            return closest_index
+
+    def _parse_gcode_line(self, line):
+        """
+        Parses a G-code line to extract X, Y, Z coordinates.
+        Returns a tuple (x, y, z) or None if the coordinates are not present.
+        """
+        x = y = z = None
+        parts = line.split()
+        for part in parts:
+            if part.startswith('X'):
+                x = float(part[1:])
+            elif part.startswith('Y'):
+                y = float(part[1:])
+            elif part.startswith('Z'):
+                z = float(part[1:])
+        if x is not None and y is not None and z is not None:
+            return (x, y, z)
+        return None
 
     def _height_parser(self):
         """Parses the G-code file to find layer change heights and their corresponding line indices."""
@@ -164,4 +241,3 @@ G91 ; Set back to relative positioning
 
             # Move the start_index past the end marker for the next search
             start_index = end_index + 1
-
