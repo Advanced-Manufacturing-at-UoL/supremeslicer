@@ -63,7 +63,6 @@ G91 ; Set back to relative positioning
 ; VacuumPnP TOOL G CODE INJECTION END
 ;-----------------------------------------------
 """
-
         print("G-code injection generated.")
 
     def inject_gcode_at_height(self, target_height, output_path):
@@ -94,7 +93,7 @@ G91 ; Set back to relative positioning
 
         # Define the output path
         output_file = Utils.get_resource_path(os.path.join(output_path, os.path.basename(self.filename)))
-        
+
         with open(output_file, 'w') as f:
             f.writelines(lines)
 
@@ -115,58 +114,100 @@ G91 ; Set back to relative positioning
         target_y = self.startY
         target_z = self.startZ
 
-        print("The targets that we have are")
-        print(f"G1 X{target_x} Y{target_y} Z{target_z}")
+        print("Target values selected")
+        print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
 
-        # Find the closest line to the target coordinates
-        injection_point = self._find_closest_line(target_x, target_y, target_z)
-        if injection_point == -1:
-            print("Error: Could not find a suitable injection point based on coordinates.")
+        # Find the closest Z-coordinate in the file
+        closest_z, lines_at_z = self._find_lines_at_closest_z(target_z)
+
+        if not lines_at_z:
+            print(f"No coordinates found at or near Z={target_z:.2f}")
             return
 
-        print(f"Injecting at closest line: {injection_point} (Closest coordinates)")
+        print(f"Found Z={closest_z:.3f} in the G-code. Searching for closest (X, Y) at that height...")
 
+        # Find the closest (X, Y) at that Z height
+        injection_point = self._find_closest_xy_in_lines(lines_at_z[0], target_x, target_y)
+        print(f"The Injection point is: {injection_point}")
+
+        if injection_point == -1:
+            print(f"No matching X, Y found near Z={closest_z:.3f}. Unable to inject the G-code.")
+            return
+
+        print(f"Injecting at line: {injection_point[0]}")
+
+        # Inject the G-code at the closest point
         with open(self.filename, 'r') as f:
             lines = f.readlines()
 
         custom_gcode_lines = self.injected_gcode.splitlines()
-        lines.insert(injection_point + 1, '\n'.join(custom_gcode_lines) + '\n')
+        lines.insert(injection_point[0] + 1, '\n'.join(custom_gcode_lines) + '\n')
 
         # Define the output path
         output_file = Utils.get_resource_path(os.path.join(output_path, os.path.basename(self.filename)))
-        
+
         with open(output_file, 'w') as f:
             f.writelines(lines)
 
         print(f"G-code injected and saved to {output_file}\n")
 
-    def _find_closest_line(self, target_x, target_y, target_z):
-        """
-        Finds the closest line in the G-code to the given coordinates (x, y, z).
-        Returns the line index where the closest coordinates are found.
-        """
-        closest_distance = float('inf')
-        closest_index = -1
+    def _find_lines_at_closest_z(self, target_z):
+        """Finds the closest Z height and returns the lines that match this Z height."""
+        closest_z = None
+        min_z_diff = 0.4
+        lines_at_z = []
 
         with open(self.filename, 'r') as f:
             lines = f.readlines()
-            for i, line in enumerate(lines):
-                if line.startswith('G0') or line.startswith('G1'):
-                    coords = self._parse_gcode_line(line)
-                    if coords:
-                        x, y, z = coords
-                        distance = abs(x - target_x) + abs(y - target_y) + abs(z - target_z)
+
+        for i, line in enumerate(lines):
+            if line.startswith('G0') or line.startswith('G1'):
+                coords = self._parse_gcode_line(line)
+                if coords:
+                    x, y, z = coords
+                    if z is not None:
+                        z_diff = abs(z - target_z)
+                        if z_diff < min_z_diff:
+                            min_z_diff = z_diff
+                            closest_z = z
+                            lines_at_z = []
+                        if z == closest_z:
+                            lines_at_z.append((i))
+        
+        print(f"The closest z found was: {closest_z}")
+        print(f"The lines at this z position was: {lines_at_z}\n")
+
+        return closest_z, lines_at_z
+
+
+    def _find_closest_xy_in_lines(self, start_index, target_x=None, target_y=None):
+        """Search the G-code file from a specific index onward, looking for the closest (X, Y) coordinates."""
+        closest_distance = float('inf')
+        closest_index = -1
+        found_coordinates = None
+
+        # Open the G-code file and read the lines
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
+
+        # Start searching from the provided start_index
+        for i in range(int(start_index), len(lines)):
+            line = lines[i].strip()
+            if line.startswith('G0') or line.startswith('G1'):
+                coords = self._parse_gcode_line(line)
+                if coords:
+                    x, y, z = coords
+                    if x is not None and y is not None and target_x is not None and target_y is not None:
+                        distance = math.sqrt((x - target_x) ** 2 + (y - target_y) ** 2)
                         if distance < closest_distance:
                             closest_distance = distance
                             closest_index = i
+                            found_coordinates = (x, y)
 
-            return closest_index
+        return closest_index, closest_distance, found_coordinates
 
     def _parse_gcode_line(self, line):
-        """
-        Parses a G-code line to extract X, Y, Z coordinates.
-        Returns a tuple (x, y, z) or None if the coordinates are not present.
-        """
+        """Parses a G-code line to extract X, Y, Z coordinates."""
         x = y = z = None
         parts = line.split()
         for part in parts:
@@ -176,9 +217,8 @@ G91 ; Set back to relative positioning
                 y = float(part[1:])
             elif part.startswith('Z'):
                 z = float(part[1:])
-        if x is not None and y is not None and z is not None:
+        if x is not None or y is not None or z is not None:
             return (x, y, z)
-        return None
 
     def _height_parser(self):
         """Parses the G-code file to find layer change heights and their corresponding line indices."""
@@ -236,7 +276,7 @@ G91 ; Set back to relative positioning
 
             # Extract the injected G-code section
             injected_gcode_section = ''.join(lines[start_index:end_index]).strip()
-            
+
             print(f"\nInjected G-code found from line {start_line_number} to {end_line_number}: \n\n{start_marker}\n{injected_gcode_section}\n{end_marker}\n")
 
             # Move the start_index past the end marker for the next search

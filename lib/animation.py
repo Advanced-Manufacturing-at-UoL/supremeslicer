@@ -7,7 +7,6 @@ import vtk
 # Ensure we mute the warnings
 vtk.vtkObject.GlobalWarningDisplayOff()
 
-
 class ToolpathAnimator:
     """Toolpath Animation Class for PyVista approach"""
     def __init__(self, gcode_file):
@@ -44,18 +43,15 @@ class ToolpathAnimator:
 
         for line in gcode:
             line = line.strip()
-
-            # Detect new layer
             if line.startswith(';LAYER_CHANGE'):
                 layer += 1
                 continue
 
-            # Extract Z height
+            # Extract Z height then X,Y coordinates
             z_match = re.search(r'G[01].*Z([-+]?\d*\.\d+|\d+)', line)
             if z_match:
                 current_z = float(z_match.group(1))
 
-            # Extract X, Y coordinates
             x_match = re.search(r'X([-+]?\d*\.\d+|\d+)', line)
             y_match = re.search(r'Y([-+]?\d*\.\d+|\d+)', line)
 
@@ -85,7 +81,6 @@ class ToolpathAnimator:
 
     def setup_plotter(self):
         """Setup the plotter with widgets for slider and checkbox."""
-
         self.plotter = pv.Plotter()
         self.plotter.set_background('white')
         self.plotter.add_text('Layer 0', font_size=12, color='black')
@@ -136,8 +131,6 @@ class ToolpathAnimator:
             (self.global_bounds[3] + self.global_bounds[2]) / 2,
             (self.global_bounds[5] + self.global_bounds[4]) / 2
         )
-        #self.plotter.camera.SetViewUp(0, 1, 0)
-        # self.plotter.camera.Zoom(1.5)  # Keep zoom level consistent
         self.plotter.reset_camera()
 
         # Add slider widget
@@ -192,7 +185,6 @@ class ToolpathAnimator:
         print("To exit, press X on the tab then use CTRL-C\n")
         self.layers = sorted(set(self.plot_data['layer']))
         self.setup_plotter()
-
         self.plotter.show(interactive_update=True)
 
         try:
@@ -240,7 +232,7 @@ class ToolpathAnimator:
                     if len(x) > 1:
                         mesh = self.create_toolpath_mesh(x, y, z, radius=properties['radius'])
                         self.meshes_per_layer[layer].append((mesh, properties['color']))
-        
+
         # Iterate over each layer to update the plot and capture frames
         for layer in range(len(self.layers)):
             self.current_step = layer
@@ -284,8 +276,7 @@ class ToolpathAnimator:
         # Iterate over only the final layer to update the plot and capture the final frame
         self.current_step = len(self.layers) - 1  # Set to the last frame
         self.update_plot()
-        
-        
+
         self.plotter.screenshot(filepath)
         self.plotter.camera.SetViewUp(0, 1, 0)
         self.plotter.camera.Zoom(1.5)  # Keep zoom level consistent
