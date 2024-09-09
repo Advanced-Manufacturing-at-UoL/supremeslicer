@@ -15,9 +15,9 @@ pralishbusiness@gmail.com
 """
 
 import traceback
-import logging
-from lib.static.main_engine import MainEngine
-from lib.static.utils import Utils
+import logging # Import debugging methods
+from lib.main_engine import MainEngine # Import classes to run main_engine client
+from lib.utils import Utils
 
 def main():
     try:

@@ -199,6 +199,7 @@ class ToolpathAnimator:
             print("Exiting")
             self.plotter.close()
         finally:
+            print("Exiting")
             self.plotter.close()
 
     def save_animation(self, filepath, fps=10):

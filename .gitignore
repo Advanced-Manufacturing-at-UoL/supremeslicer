@@ -1,7 +1,7 @@
 /dist
 /build
-/lib/static/__pycache__
-/lib/tools/__pycache__
+/lib/__pycache__
+/tools/__pycache__
 /output/*
 main.exe
 error_log.txt

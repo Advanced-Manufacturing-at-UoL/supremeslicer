@@ -1,6 +1,6 @@
 import subprocess
 import os
-from lib.static.utils import Utils
+from lib.utils import Utils
 
 class PrusaSlicer:
     """PrusaSlicer Native Slicer handler class"""
