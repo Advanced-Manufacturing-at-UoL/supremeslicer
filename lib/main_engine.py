@@ -107,8 +107,6 @@ class MainEngine:
                 config['startY'] = f"{picked_position[1]:.3f}"
                 config['startZ'] = f"{picked_position[2]:.3f}"
 
-                # coordinates = config['startX'], config['startY'], config['startZ']
-
                 # Preparation to write_yaml_function
                 key_order = [
                     'zHop_mm',
@@ -132,7 +130,7 @@ class MainEngine:
                 self.vacuum_pnp_tool.generate_gcode()
 
                 # Inject the g-code at the layer corresponding to that coordinate
-                #self.vacuum_pnp_tool.inject_gcode_given_coordinates(output_directory)
+                self.vacuum_pnp_tool.inject_gcode_given_coordinates(output_directory)
         else:
             print("Invalid option. Please select between 1-3.")
 
