@@ -7,12 +7,14 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderWindowInteractor,
     vtkRenderer
 )
+
 from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 
 class STLViewer:
+    """STLViewer class to view Input STL and obtain position of user selected marker"""
     def __init__(self, stl_file, bed_shape, origin=(0, 0, 0), slicer_transform=None):
         self.stl_file = stl_file
         self.origin = self.calculate_origin(bed_shape)
@@ -21,8 +23,9 @@ class STLViewer:
         self.create_renderer()
 
     def calculate_origin(self, bed_shape):
-        # Extract the coordinates from the bed_shape string
+        """Method to calculate origin of the STL"""
         points = []
+
         for coord in bed_shape.split(','):
             x, y = map(float, coord.split('x'))
             points.append((x, y))
@@ -39,6 +42,7 @@ class STLViewer:
         return (center_x, center_y, 0)
 
     def create_renderer(self):
+        """Method to create render"""
         colors = vtkNamedColors()
 
         # Read STL file
@@ -48,11 +52,8 @@ class STLViewer:
 
         # Create a transform to adjust the STL origin
         transform = vtk.vtkTransform()
-
-        # Apply origin translation
         transform.Translate(self.origin)
 
-        # Apply any slicer-specific transformation (e.g., rotations, additional translations)
         if self.slicer_transform:
             transform.Concatenate(self.slicer_transform)
 
@@ -84,7 +85,6 @@ class STLViewer:
         # Set up the render window and interactor
         self.render_window = vtkRenderWindow()
         self.render_window.AddRenderer(self.renderer)
-
         self.interactor = vtkRenderWindowInteractor()
         self.interactor.SetRenderWindow(self.render_window)
 
@@ -97,21 +97,22 @@ class STLViewer:
         self.render_window.Render()
 
     def create_marker(self):
-        """Create a sphere marker."""
+        """Method to create a sphere marker."""
         sphere_source = vtkSphereSource()
         sphere_source.SetRadius(0.1)
         sphere_source.SetPhiResolution(20)
         sphere_source.SetThetaResolution(20)
-        
+
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(sphere_source.GetOutputPort())
-        
+
         actor = vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetColor(1.0, 0.0, 0.0)  # Red color
         return actor
 
     def on_left_button_press(self, obj, event):
+        """Method to handle left button press"""
         click_pos = obj.GetInteractor().GetLastEventPosition()
         print(f"Click position: {click_pos}")
 
@@ -122,7 +123,6 @@ class STLViewer:
         picked_position = picker.GetPickPosition()
 
         if picker.GetActor() is not None:
-    
             print(f"Picked position: {picked_position[0]:.3f}, {picked_position[1]:.3f}, {picked_position[2]:.3f}\n")
             self.marker_actor.SetPosition(picked_position)
             self.selected_point = picked_position
@@ -130,7 +130,9 @@ class STLViewer:
         self.interactor.GetInteractorStyle().OnLeftButtonDown()  # Call the base class method to ensure default behavior
 
     def start(self):
+        """Method to start render"""
         self.interactor.Start()
 
     def get_selected_point(self):
+        """Method for returning selected point"""
         return self.selected_point

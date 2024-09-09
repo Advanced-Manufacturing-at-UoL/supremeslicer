@@ -12,7 +12,7 @@ class PrusaSlicer:
 
         if not all([self.prusaslicer_executable, self.printer_profile, self.input_stl, self.output_dir]):
             raise ValueError("Missing one or more configuration parameters.")
-        
+
     def _confirm_input(self):
         """Method to confirm the config.yaml file input"""
         print(f"Slicer config file has been read\n")

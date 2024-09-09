@@ -5,7 +5,6 @@ import sys
 import os
 from collections import OrderedDict
 
-
 class Utils:
     """Utils class for running utility functions"""
 

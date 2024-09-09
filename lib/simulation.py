@@ -12,8 +12,8 @@ from lib.utils import Utils
 
 
 class SimulationProcessor:
+    """Simulation processor class for rendering toolpaths"""
     def __init__(self, filename):
-        """Initialise class"""
         self.config_file = Utils.get_resource_path('configs/simulation.yaml')
         self.filename = filename
         self.config = self.load_config()
@@ -26,7 +26,7 @@ class SimulationProcessor:
         self.show_travel = self.config.get('show_travel', 0)  # Flag from YAML configuration
         self.last_slider_update = time.time()
         self.slider_update_interval = 0.1
-        self.is_mesh_displayed = False  # New attribute to track mesh display
+        self.is_mesh_displayed = False
 
     def load_config(self):
         """Load configuration from a YAML file."""
@@ -559,7 +559,6 @@ class SimulationProcessor:
     
     def get_centre_of_mass(self):
         """Method to get centre of mass"""
-
         e_coords, _, _ = self.parse_gcode(self.gcode)
 
         if not e_coords:
@@ -592,7 +591,7 @@ class SimulationProcessor:
                 y_mass_sum += y * mass
                 z_mass_sum += z * mass
                 total_mass += mass
-            
+
             previous_coord = (x, y, z)
 
         # Calculate the center of mass
@@ -601,7 +600,6 @@ class SimulationProcessor:
         z_com = z_mass_sum / total_mass
 
         return x_com, y_com, z_com
-
 
 def filter_close_coordinates(coordinates, threshold=0):
     """Filter out coordinates too close to each other based on threshold."""
@@ -613,8 +611,6 @@ def filter_close_coordinates(coordinates, threshold=0):
 
         for coord in coordinates[1:]:
             last_filtered_coord = filtered_coords[-1]
-
-            # Extract X, Y, Z for distance calculation and ensure they're floats
             last_x, last_y, last_z = float(last_filtered_coord[1]), float(last_filtered_coord[2]), float(last_filtered_coord[3])
             curr_x, curr_y, curr_z = float(coord[1]), float(coord[2]), float(coord[3])
             distance = np.linalg.norm([curr_x - last_x, curr_y - last_y, curr_z - last_z])

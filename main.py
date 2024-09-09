@@ -1,27 +1,23 @@
 """
 (C) 19/07/2024
-Edited 21/08/2024
+Editted 09/09/2024
 University of Leeds, 2024
 School of Mechanical Engineering
 
-Custom Sandwiched Slicer Tool for slicing and generating toolpaths for the AMPI
-machine with custom tools.
+Custom Slicer Tool for slicing and generating toolpaths for the AMPI
+machine with custom tools. Current verion is V1.3.X. This code has a
+toolpath renderer as well as a animation tool for rendering the toolpath.
 
-Written and Designed by Pralish Satyal
+Fully Written and Designed by Pralish Satyal
 el19ps@leeds.ac.uk
 P.Satyal@leeds.ac.uk
-
 pralishbusiness@gmail.com
 """
 
-# Import debugging methods
 import traceback
-import logging
-
-# Import Main Engine Class to run the process thread
-from lib.main_engine import MainEngine
+import logging # Import debugging methods
+from lib.main_engine import MainEngine # Import classes to run main_engine client
 from lib.utils import Utils
-
 
 def main():
     try:
