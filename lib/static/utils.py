@@ -12,7 +12,6 @@ class Utils:
     def read_yaml(file_path):
         """
         Reads  the YAML file content with indentation to show structure accounting for backslashes.
-        
         :param file_path: The path to the YAML file.
         """
         try:
@@ -51,7 +50,6 @@ class Utils:
     def print_yaml(file_path):
         """
         Reads and prints the YAML file content with indentation to show structure.
-        
         :param file_path: The path to the YAML file.
         """
         yaml_data = Utils.read_yaml(file_path)
@@ -60,7 +58,6 @@ class Utils:
     def _print_yaml_recursive(yaml_data, level=0):
         """
         Recursively print YAML data with indentation to show structure.
-
         :param yaml_data: The YAML data to print.
         :param level: The current level of indentation.
         """
@@ -101,5 +98,8 @@ class Utils:
     
     @staticmethod
     def get_resource_path(relative_path):
-        path = os.path.abspath(relative_path)
-        return path
+        base_path = os.path.dirname(os.path.realpath(__file__))
+        project_root = os.path.abspath(os.path.join(base_path, '..', '..'))
+        full_path = os.path.join(project_root, relative_path)
+
+        return full_path

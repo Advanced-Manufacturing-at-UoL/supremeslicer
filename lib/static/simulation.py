@@ -8,13 +8,13 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 
-from lib.utils import Utils
+from lib.static.utils import Utils
 
 
 class SimulationProcessor:
     """Simulation processor class for rendering toolpaths"""
     def __init__(self, filename):
-        self.config_file = Utils.get_resource_path('configs/simulation.yaml')
+        self.config_file = Utils.get_resource_path(r'configs/simulation.yaml')
         self.filename = filename
         self.config = self.load_config()
         self.gcode = self.read_gcode()

@@ -1,11 +1,11 @@
 import os
 
-from lib.utils import Utils
-from lib.stl_viewer import STLViewer
-from lib.prusa_slicer import PrusaSlicer
-from lib.simulation import SimulationProcessor
-from lib.animation import ToolpathAnimator
-from tools.vacuum_pnp import VacuumPnP
+from lib.static.utils import Utils
+from lib.static.stl_viewer import STLViewer
+from lib.static.prusa_slicer import PrusaSlicer
+from lib.static.simulation import SimulationProcessor
+from lib.static.animation import ToolpathAnimator
+from lib.tools.vacuum_pnp import VacuumPnP
 
 class MainEngine:
     """Main Engine Class for running the overall program"""
@@ -75,6 +75,9 @@ class MainEngine:
         print("1. Generate and inject Gcode")
         print("2. Read Gcode file output")
         print("3. Render STL Viewer and auto-inject coordinate")
+
+        print(f"Config file is {config_file}")
+        print(f"Filename is {self.filename}")
         self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
         user_in = int(input())
 
@@ -89,7 +92,7 @@ class MainEngine:
             self.vacuum_pnp_tool.print_injected_gcode()
         elif user_in == 3:
             bed_shape = "20x75,250x75,250x250,20x250"
-            viewer = STLViewer("input/benchy.stl", bed_shape)
+            viewer = STLViewer(Utils.get_resource_path("input/benchy.stl"), bed_shape)
             viewer.start()
 
             picked_position = viewer.get_selected_point()
@@ -255,7 +258,7 @@ class MainEngine:
             self._output_folder() # Retrieve the output folder
 
             if user_in == 1:
-                print("Plotting Original toolpath")
+                print("\nPlotting Original toolpath")
                 start_time = Utils.start_timer()
                 animator = ToolpathAnimator(self.filename)
                 animator.parse_gcode()

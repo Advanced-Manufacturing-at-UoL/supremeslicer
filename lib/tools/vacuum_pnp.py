@@ -1,6 +1,6 @@
 import os
 import math
-from lib.utils import Utils
+from lib.static.utils import Utils
 
 class VacuumPnP:
     """Class for handling functions for the VacuumPnP tool"""
