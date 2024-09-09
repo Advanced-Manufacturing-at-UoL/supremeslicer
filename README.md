@@ -97,9 +97,10 @@ Contributions to **SupremeSlicer** are welcome provided you have forked the repo
 
 ## Contact
 
-For questions or support, reach out to Pralish via either contact detail: 
-[P.Satyal@leeds.ac.uk](mailto:P.Satyal@leeds.ac.uk) 
-[pralishbusiness@gmail.com](mailto:pralishbusiness@gmail.com) 
-
+For questions or support, reach out to Pralish via either contact detail:  
+[P.Satyal@leeds.ac.uk](mailto:P.Satyal@leeds.ac.uk)   
+[pralishbusiness@gmail.com](mailto:pralishbusiness@gmail.com)   
+  
 Created by Pralish Satyal, 19/07/2024.
 Released by Pralish Satyal, 09/09/2024.
+  
