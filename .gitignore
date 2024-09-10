@@ -5,3 +5,4 @@
 /output/*
 main.exe
 error_log.txt
+tools/vacuum_config.yaml
