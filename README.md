@@ -14,8 +14,16 @@
   - **Screwdriver Tool**: Injects custom G-code for screwdriver operations.
   - **Gripper Tool**: Injects custom G-code for gripper operations.
 
-- **Overall G-code Simulation Tool**:
-  - Visualizes and verifies generated G-code to ensure accurate toolpaths before actual printing.
+- **G-code Toolpath Viewer Tool**:
+  - Visualises overall toolpath or exlusively just the VacuumPnP toolpath frame by frame.
+
+- **Mesh Animation Render Tool**:
+  - Visualises the overall part render as an animation in mesh form.
+
+- **STL Viewer**:
+  - Visualises the input STL selected by the user from the config.yaml file
+  - Allows the user to add markers to obtain accurate position of the part.
+  - User can 'auto-inject' where they wish to use the VacuumPnP tool.
 
 ## Tools
 
@@ -63,61 +71,13 @@
     ```
 
 4. **Copy the contents from below to the main.spec file after running the install command **:
-  - Compile the file into one exe and generate generic spec file
-
-  ```bash
-  pyinstaller --onefile main.py
-  ```
- - Copy over the spec file from below to the main.spec file
-```bash 
-  # -*- mode: python ; coding: utf-8 -*-
-  a = Analysis(
-      ['main.py'],
-      pathex=[],
-      binaries=[],
-      datas=[
-          ('lib', 'lib'),
-          ('tools', 'tools'),
-          ('configs','configs'),
-          ('tools', 'tools'),
-          ('input', 'input'),
-          ('output', 'output')
-      ],
-      hiddenimports=[],
-      hookspath=[],
-      hooksconfig={},
-      runtime_hooks=[],
-      excludes=[],
-      noarchive=False,
-  )
-  pyz = PYZ(a.pure)
-
-  exe = EXE(
-      pyz,
-      a.scripts,
-      a.binaries,
-      a.datas,
-      [],
-      name='main',
-      debug=False,
-      bootloader_ignore_signals=False,
-      strip=False,
-      upx=True,
-      upx_exclude=[],
-      runtime_tmpdir=None,
-      console=True,
-      disable_windowed_traceback=False,
-      argv_emulation=False,
-      target_arch=None,
-      codesign_identity=None,
-      entitlements_file=None,
-  )
-```
- 
- - Rebuild the exe through running:
+  - Rebuild the exe with the provided spec file through running:
 ```bash 
 pyinstaller --clean main.spec
 ```
+ 
+ - Move the exe to the project directory:
+(Program should be supremeslicer/main.exe)
 
 ### Configuration
 
@@ -128,52 +88,19 @@ pyinstaller --clean main.spec
   
   Specify the parameters for G-code generation in these files.
 
-- Update the paths in the `main.py` file to match your setup.
+- Update the paths in the `configs/config.yaml` file to match your setup.
 
-### Usage as a Python Script
-
-1. **Run the Terminal Client**:
-    ```bash
-    python main.py
-    ```
-
-2. **Follow the Prompts**:
-   - Choose the tool.
-   - Generate and inject G-code.
-   - Simulate the overall G-code.
-
-### Building an Executable
-
-1. **Build the Program with PyInstaller**:
-    ```bash
-    pyinstaller --onefile main.py
-    ```
-2. **Edit the main spec**:
-   - Add the hidden import and the lib folder and tools folder
- 
-3. **Rebuild with the main spec file**:
-    ```bash
-    pyinstaller main.spec
-    ```
-    - When prompted, press y to overwrite the build directory.
-4. **Run the Executable**:
-   - Navigate to the `dist` directory.
-   - Run the EXE file to start the application.
-
-### Example Usage
-
-To inject G-code for the VacuumSuction Tool:
-
-1. **Select the Option**: Choose to generate and inject G-code.
-2. **Specify Parameters**: Enter the height where the G-code should be injected.
-3. **Provide Output Path**: Specify where the modified G-code will be saved.
 
 ## Contributing
 
-Contributions to **SupremeSlicer** are welcome! Please fork the repository and submit a pull request with your changes. Ensure that your contributions are well-documented and tested.
+Contributions to **SupremeSlicer** are welcome provided you have forked the repository and submitted a pull request with your changes. Ensure that your contributions are well-documented and tested.
 
 ## Contact
 
-For questions or support, reach out to [pralishbusiness@gmail.com](mailto:pralishbusiness@gmail.com).
-
-Created by Pralish Satyal, 22/07/2024.
+For questions or support, reach out to Pralish via either contact detail:  
+[P.Satyal@leeds.ac.uk](mailto:P.Satyal@leeds.ac.uk)   
+[pralishbusiness@gmail.com](mailto:pralishbusiness@gmail.com)   
+  
+Created by Pralish Satyal, 19/07/2024.
+Released by Pralish Satyal, 09/09/2024.
+  
