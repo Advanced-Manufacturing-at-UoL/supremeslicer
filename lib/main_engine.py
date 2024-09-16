@@ -309,7 +309,7 @@ class MainEngine:
             print("1. Read Config file")
             print("2. Slice a g-code file")
             print("3. Access tools")
-            print("4. Obtain Part informaiton")
+            print("4. Obtain Part information")
             print("5. Run STL Viewer")
             print("6. Create Simulation")
             print("7. Render Animation")
