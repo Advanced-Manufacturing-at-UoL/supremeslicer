@@ -22,7 +22,6 @@ from lib.ui_engine import SupremeSlicerUI
 # Run the application
 def main():
     app = QApplication(sys.argv)
-
     main_window = SupremeSlicerUI()
     main_window.show()
     sys.exit(app.exec_())

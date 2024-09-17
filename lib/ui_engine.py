@@ -1,9 +1,6 @@
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QFileDialog, 
-                             QMessageBox, QTextEdit, QMenuBar, QToolBar)
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QTextEdit, QInputDialog, QMessageBox
 from lib.utils import Utils
-from lib.main_engine import MainEngine
+from lib.ui_main_engine import MainEngine
 import sys
 
 
@@ -12,7 +9,7 @@ class SupremeSlicerUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.main_engine = MainEngine()
+        self.main_engine = MainEngine(self.display_message, self.get_user_input)
 
     def initUI(self):
         """Initialise the main window UI components."""
@@ -23,9 +20,7 @@ class SupremeSlicerUI(QMainWindow):
         self.text_display = QTextEdit(self)
         self.text_display.setReadOnly(True)
         self.setCentralWidget(self.text_display)
-
         self.createMenus() # Set up the Menu Bar
-
 
     def createMenus(self):
         """Create the main menu bar with various options."""
@@ -82,13 +77,28 @@ class SupremeSlicerUI(QMainWindow):
         toolbar_menu_action.triggered.connect(self.run_vacuum_tool)
         toolbar_menu.addAction(toolbar_menu_action)
 
+    # def createMenus(self):
+    #     menu = self.menuBar()
+    #     run_menu = menu.addMenu('Run')
+    #     run_slicer_action = QAction('Run Slicer', self)
+    #     run_slicer_action.triggered.connect(self.run_slicer)
+    #     run_menu.addAction(run_slicer_action)
 
     def display_message(self, message):
         """Display messages in the central text area."""
         self.text_display.append(message + '\n')
 
-#################################
-    """ Methods for bridging main_engine functionality"""
+    def get_user_input(self, prompt):
+        """Show a dialog to get input from the user."""
+        text, ok = QInputDialog.getText(self, 'Input Required', prompt)
+        if ok:
+            return text
+        return None  # Optionally handle 'None' more gracefully
+
+
+    def run_slicer(self):
+        self.main_engine._run_slicer()
+#~~~~~~~~~~~~~~~~~~~~~METHODS BRIDGING MAIN_ENGINE FUNCTIONALITY~~~~~~~~~~~~~~~~#
 
     def read_config(self):
         """Open and display the config file."""
@@ -167,3 +177,4 @@ class SupremeSlicerUI(QMainWindow):
             "Custom tools include the general extruder, the VacuumPnP tool, the screwdriver, and the gripper."
         )
         QMessageBox.information(self, "Documentation", doc_text)
+
