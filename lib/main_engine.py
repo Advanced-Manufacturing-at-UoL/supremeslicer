@@ -89,7 +89,7 @@ class MainEngine:
             self.vacuum_pnp_tool.print_injected_gcode()
         elif user_in == 3:
             bed_shape = "20x75,250x75,250x250,20x250"
-            viewer = STLViewer("input/benchy.stl", bed_shape)
+            viewer = STLViewer(self.config['input_stl'], bed_shape)
             viewer.start()
 
             picked_position = viewer.get_selected_point()
@@ -208,7 +208,7 @@ class MainEngine:
         """Render the stl visually"""
         try:
             bed_shape = "20x75,250x75,250x250,20x250"
-            viewer = STLViewer("input/benchy.stl", bed_shape)
+            viewer = STLViewer(self.config['input_stl'], bed_shape)
             viewer.start()
         except Exception as e:
             raise Exception(f"An unexpected error occurred: {e}")

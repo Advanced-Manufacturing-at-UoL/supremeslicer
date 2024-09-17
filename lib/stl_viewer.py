@@ -122,8 +122,14 @@ class STLViewer:
         picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
         picked_position = picker.GetPickPosition()
 
+        """This is calculated using the machine offsets but really we should use centre position calculation"""
+        x_pos = float(f"{picked_position[0]:.3f}") - 9.47 # offset calculated from machine
+        y_pos = float(f"{picked_position[1]:.3f}") - 10.2
+        z_pos = float(f"{picked_position[2]:.3f}") + 1
+
+
         if picker.GetActor() is not None:
-            print(f"Picked position: {picked_position[0]:.3f}, {picked_position[1]:.3f}, {picked_position[2]:.3f}\n")
+            print(f"Picked position: {x_pos} {y_pos} {z_pos}\n")
             self.marker_actor.SetPosition(picked_position)
             self.selected_point = picked_position
 
