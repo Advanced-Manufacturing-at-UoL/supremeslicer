@@ -18,7 +18,7 @@ from lib.simulation import SimulationProcessor
 
 class STLViewer:
     """STLViewer class to view Input STL and obtain position of user selected marker"""
-    def __init__(self, stl_file, gcode_file, bed_centre, bed_shape, origin=(0, 0, 0), slicer_transform=None):
+    def __init__(self, stl_file, gcode_file, config, bed_shape, origin=(0, 0, 0), slicer_transform=None):
         self.stl_file = stl_file
         self.origin = self.calculate_origin(bed_shape)
         self.slicer_transform = slicer_transform
@@ -29,7 +29,7 @@ class STLViewer:
         self.simulator = SimulationProcessor(self.gcode)
         self.center_offsets = self.simulator.get_part_info()
 
-        self.bed_centre = bed_centre
+        self.config = config
 
     def calculate_origin(self, bed_shape):
         """Method to calculate origin of the STL"""
@@ -130,28 +130,35 @@ class STLViewer:
         picker.SetTolerance(0.0005)
         picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
         picked_position = picker.GetPickPosition()
+        
+        # Check if a centre position has been given
+        if self.config.get('centre', None):
+            print("Centre position has been given")
+            print("Calculating offsets from new centre and tool offset")
 
-        # Static offset calculation
-        x_pos = float(f"{picked_position[0]:.3f}") - 9.47
-        y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-        z_pos = float(f"{picked_position[2]:.3f}") + 1
+            # Calculate the offset if the part is no longer in centre of bed
+            part_x, part_y = self.config['centre'].split(',')
+            print(f"Calculating the bed offset with the new bed_position of {part_x, part_y}\n")
+            bed_center_x, bed_center_y = 135, 135
 
-        # Calculate the offset if the part is no longer in centre of bed
-        part_x, part_y = self.bed_centre.split(',')
-        print(f"Calculating the bed offset with the new bed_position of {self.bed_centre}\n")
-        bed_center_x, bed_center_y = 135, 135
+            # Dynamic offsets: Distance from bed center to part center
+            offset_x = bed_center_x - float(part_x)
+            offset_y = bed_center_y - float(part_y)
 
-        # Dynamic offsets: Distance from bed center to part center
-        offset_x = bed_center_x - float(part_x)
-        offset_y = bed_center_y - float(part_y)
-
-        # Adjust the picked positions by the dynamic offsets
-        adjusted_x = picked_position[0] - offset_x -9.47
-        adjusted_y = picked_position[1] - offset_y -10.2
-        adjusted_z = picked_position[2]  + 1
+            # Adjust the picked positions by the dynamic offsets
+            x_pos = picked_position[0] - offset_x -9.47
+            y_pos = picked_position[1] - offset_y -10.2
+            z_pos = picked_position[2]  + 1
+        else:
+            print("Centre position not given")
+            print("Just using tool offset")
+            # Static offset calculation
+            x_pos = float(f"{picked_position[0]:.3f}") - 9.47
+            y_pos = float(f"{picked_position[1]:.3f}") - 10.2
+            z_pos = float(f"{picked_position[2]:.3f}") + 1
         
         if picker.GetActor() is not None:
-            print(f"Picked position with dynamic offsets: {adjusted_x:.2f} {adjusted_y:.2f} {adjusted_z:.2f}\n")
+            print(f"Picked position with offsets: {x_pos:.2f} {y_pos:.2f} {z_pos:.2f}\n")
             self.marker_actor.SetPosition(picked_position)
             self.selected_point = picked_position
 
