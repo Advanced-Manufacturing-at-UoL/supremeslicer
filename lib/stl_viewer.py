@@ -14,9 +14,7 @@ from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 # Assuming STLViewer is defined in stl_viewer.py
 
-from lib.simulation import SimulationProcessor  # Ensure correct import path
-
-import sys
+from lib.simulation import SimulationProcessor
 
 class STLViewer:
     """STLViewer class to view Input STL and obtain position of user selected marker"""
@@ -26,10 +24,10 @@ class STLViewer:
         self.slicer_transform = slicer_transform
         self.marker_actor = None
         self.create_renderer()
+
         self.gcode = gcode_file
         self.simulator = SimulationProcessor(self.gcode)
         self.center_offsets = self.simulator.get_part_info()
-        print(self.center_offsets)
 
     def calculate_origin(self, bed_shape):
         """Method to calculate origin of the STL"""
@@ -141,7 +139,7 @@ class STLViewer:
         _z_pos = float(f"{picked_position[2]:.3f}") + _offset_z
 
         if picker.GetActor() is not None:
-            print(f"Picked position with dynamic offsets: {_x_pos} {_y_pos} {z_pos}\n")
+            print(f"Picked position with dynamic offsets: {_x_pos} {_y_pos} {_z_pos}\n")
             self.marker_actor.SetPosition(picked_position)
             self.selected_point = picked_position
 
