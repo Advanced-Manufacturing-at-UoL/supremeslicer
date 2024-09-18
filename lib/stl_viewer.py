@@ -130,16 +130,29 @@ class STLViewer:
         picked_position = picker.GetPickPosition()
 
         # Dynamic Offset calculation
-        _offset_x = float(f"{picked_position[0]:.3f}") - self.center_offsets[0]
-        _offset_y = float(f"{picked_position[1]:.3f}") -self.center_offsets[1]
-        _offset_z = float(f"{picked_position[2]:.3f}") + 1
+        # x pos = x_position + (x_position - centre offset)
+         # this wouldn't work, keep it static for now as if we select places that aren't centre
+         # we're essentially doing a non-centre - centre coordinate which is wrong
 
-        _x_pos = float(f"{picked_position[0]:.3f}") - _offset_x
-        _y_pos = float(f"{picked_position[1]:.3f}") - _offset_y
-        _z_pos = float(f"{picked_position[2]:.3f}") + _offset_z
+        # _offset_x = float(f"{picked_position[0]:.3f}") - self.center_offsets[0]
+        # _offset_y = float(f"{picked_position[1]:.3f}") -self.center_offsets[1]
+        # _offset_z = float(f"{picked_position[2]:.3f}") + 1
+
+        # _x_pos = float(f"{picked_position[0]:.3f}") - _offset_x
+        # _y_pos = float(f"{picked_position[1]:.3f}") - _offset_y
+        # _z_pos = float(f"{picked_position[2]:.3f}") + _offset_z
+        # print(float(f"{picked_position[0]:.3f}"))
+        # print(float(f"{picked_position[1]:.3f}"))
+        # print(self.center_offsets[0])
+        # print(self.center_offsets[1])
+
+        # Static offset calculation
+        x_pos = float(f"{picked_position[0]:.3f}") - 9.47
+        y_pos = float(f"{picked_position[1]:.3f}") - 10.2
+        z_pos = float(f"{picked_position[2]:.3f}") + 1
 
         if picker.GetActor() is not None:
-            print(f"Picked position with dynamic offsets: {_x_pos} {_y_pos} {_z_pos}\n")
+            print(f"Picked position with dynamic offsets: {x_pos} {y_pos} {z_pos}\n")
             self.marker_actor.SetPosition(picked_position)
             self.selected_point = picked_position
 
