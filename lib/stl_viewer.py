@@ -130,22 +130,21 @@ class STLViewer:
         picker.SetTolerance(0.0005)
         picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
         picked_position = picker.GetPickPosition()
-        
+
         # Check if a centre position has been given
         if self.config.get('centre', None):
             print("Centre position has been given")
             print("Calculating offsets from new centre and tool offset")
 
-            # Calculate the offset if the part is no longer in centre of bed
+            # # Calculate the offset if the part is no longer in centre of bed
             part_x, part_y = self.config['centre'].split(',')
-            print(f"Calculating the bed offset with the new bed_position of {part_x, part_y}\n")
-            bed_center_x, bed_center_y = 135, 135
+            bed_center_x, bed_center_y = 135, 162
 
-            # Dynamic offsets: Distance from bed center to part center
-            offset_x = bed_center_x - float(part_x)
-            offset_y = bed_center_y - float(part_y)
+            # # Dynamic offsets: Distance from bed center to part center
+            offset_x = bed_center_x - float(part_x) # this should be 35
+            offset_y = bed_center_y - float(part_y) # this should be 62
 
-            # Adjust the picked positions by the dynamic offsets
+            # # Adjust the picked positions by the dynamic offsets
             x_pos = picked_position[0] - offset_x -9.47
             y_pos = picked_position[1] - offset_y -10.2
             z_pos = picked_position[2]  + 1
