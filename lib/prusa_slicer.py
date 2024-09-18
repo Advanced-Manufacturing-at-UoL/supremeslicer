@@ -7,6 +7,7 @@ class PrusaSlicer:
     def __init__(self, config):
         self.prusaslicer_executable = config.get('prusaslicer_executable')
         self.printer_profile = config.get('printer_profile')
+        self.centre = config.get('centre')
         self.input_stl = config.get('input_stl')
         self.output_dir = config.get('output_dir')
 
@@ -42,13 +43,27 @@ class PrusaSlicer:
     def slice_gcode(self):
         """Method to slice STL and export output to G-code file"""
         output_gcode_path = os.path.join(self.output_dir, os.path.basename(self.input_stl).replace('.stl', '.gcode'))
+        print(self.centre)
 
-        command = [
+        if self.centre:
+            print(f"Detected centre from config file: {self.centre}\n")
+            command = [
+                self.prusaslicer_executable,
+                "--load", self.printer_profile,
+                "-g", self.input_stl,
+                "--center", self.centre,
+                "--export-gcode", self.input_stl,
+                "--output", output_gcode_path,
+            ]
+
+        else:
+            print("No centre coordinates given, executing default command\n")
+            command = [
             self.prusaslicer_executable,
-            "--load", self.printer_profile,
-            "--export-gcode", self.input_stl,
-            "--output", output_gcode_path
-        ]
+                "--load", self.printer_profile,
+                "--export-gcode", self.input_stl,
+                "--output", output_gcode_path
+            ]
 
         print("Executing command:", ' '.join(command), "\n")
 

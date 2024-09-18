@@ -12,15 +12,24 @@ from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
+# Assuming STLViewer is defined in stl_viewer.py
+
+from lib.simulation import SimulationProcessor  # Ensure correct import path
+
+import sys
 
 class STLViewer:
     """STLViewer class to view Input STL and obtain position of user selected marker"""
-    def __init__(self, stl_file, bed_shape, origin=(0, 0, 0), slicer_transform=None):
+    def __init__(self, stl_file, gcode_file, bed_shape, origin=(0, 0, 0), slicer_transform=None):
         self.stl_file = stl_file
         self.origin = self.calculate_origin(bed_shape)
         self.slicer_transform = slicer_transform
         self.marker_actor = None
         self.create_renderer()
+        self.gcode = gcode_file
+        self.simulator = SimulationProcessor(self.gcode)
+        self.center_offsets = self.simulator.get_part_info()
+        print(self.center_offsets)
 
     def calculate_origin(self, bed_shape):
         """Method to calculate origin of the STL"""
@@ -122,14 +131,17 @@ class STLViewer:
         picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
         picked_position = picker.GetPickPosition()
 
-        """This is calculated using the machine offsets but really we should use centre position calculation"""
-        x_pos = float(f"{picked_position[0]:.3f}") - 9.47 # offset calculated from machine
-        y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-        z_pos = float(f"{picked_position[2]:.3f}") + 1
+        # Dynamic Offset calculation
+        _offset_x = float(f"{picked_position[0]:.3f}") - self.center_offsets[0]
+        _offset_y = float(f"{picked_position[1]:.3f}") -self.center_offsets[1]
+        _offset_z = float(f"{picked_position[2]:.3f}") + 1
 
+        _x_pos = float(f"{picked_position[0]:.3f}") - _offset_x
+        _y_pos = float(f"{picked_position[1]:.3f}") - _offset_y
+        _z_pos = float(f"{picked_position[2]:.3f}") + _offset_z
 
         if picker.GetActor() is not None:
-            print(f"Picked position: {x_pos} {y_pos} {z_pos}\n")
+            print(f"Picked position with dynamic offsets: {_x_pos} {_y_pos} {z_pos}\n")
             self.marker_actor.SetPosition(picked_position)
             self.selected_point = picked_position
 
