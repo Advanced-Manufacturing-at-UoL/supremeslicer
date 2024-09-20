@@ -93,13 +93,12 @@ class MainEngine:
             print("Invalid option. Please select between 1-3.")
 
     def _run_vacuum_stl_viewer(self):
-
-        # Regarding Injection, inject at the end of the file if user has selected that
+        """Function to handle backend for STL Viewer within Vacuum Injection tool"""
         bed_shape = "20x75,250x75,250x250,20x250"
-        viewer = STLViewer(self.config['input_stl'], self.filename, self.config, bed_shape)
-        
-        user_in = int(input("Would you like to print at: \n1.NEAREST Layer\n2.FINAL Layer\n"))
+        user_in = int(input("\nVacuumPnP Code Injection point: \n1.Nearest Layer to input coordinates\n2.Final Layer with actual coordinates\n"))
+
         if user_in == 1:
+            viewer = STLViewer(self.config['input_stl'], self.filename, self.config, bed_shape)
             viewer.start()
             picked_position = viewer.get_selected_point()
             if picked_position:
@@ -155,6 +154,7 @@ class MainEngine:
                 self.vacuum_pnp_tool.inject_gcode_given_coordinates(self.output_directory)
         elif user_in == 2:
             print("Injecting G-Code after the 'END PRINT' Command")
+            viewer = STLViewer(self.config['input_stl'], self.filename, self.config, bed_shape)
             viewer.start()
             picked_position = viewer.get_selected_point()
             if picked_position:
