@@ -65,40 +65,49 @@ class MainEngine:
     def _vacuum_tool(self):
         """Load Vacuum Tool Menu Options"""
         print("Loading VacuumPnP tool\n")
-        config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
+        self.config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
 
-        output_directory = self.config['output_dir']
-        print(f"Output directory is:{output_directory}")
+        self.output_directory = self.config['output_dir']
+        print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")
 
         print("\nWould you like to...")
         print("1. Generate and inject Gcode")
         print("2. Read Gcode file output")
         print("3. Render STL Viewer and auto-inject coordinate")
-        self.vacuum_pnp_tool = VacuumPnP(self.filename, config_file)
+        self.vacuum_pnp_tool = VacuumPnP(self.filename, self.config_file)
         user_in = int(input())
 
         if user_in == 1:
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.generate_gcode()
             height = float(input("Enter the height to inject the G-code: "))
-            output_path = output_directory
+            output_path = self.output_directory
             self.vacuum_pnp_tool.inject_gcode_at_height(height, output_path)
         elif user_in == 2:
             self.vacuum_pnp_tool.read_gcode()
             self.vacuum_pnp_tool.print_injected_gcode()
         elif user_in == 3:
-            bed_shape = "20x75,250x75,250x250,20x250"
-            viewer = STLViewer(self.config['input_stl'], self.filename, self.config, bed_shape)
-            viewer.start()
+            self._run_vacuum_stl_viewer()
+        else:
+            print("Invalid option. Please select between 1-3.")
 
+    def _run_vacuum_stl_viewer(self):
+
+        # Regarding Injection, inject at the end of the file if user has selected that
+        bed_shape = "20x75,250x75,250x250,20x250"
+        viewer = STLViewer(self.config['input_stl'], self.filename, self.config, bed_shape)
+        
+        user_in = int(input("Would you like to print at: \n1.NEAREST Layer\n2.FINAL Layer\n"))
+        if user_in == 1:
+            viewer.start()
             picked_position = viewer.get_selected_point()
             if picked_position:
                 if self.config.get('centre', None):
                     print("Centre position has been given")
                     print("Injecting with offset from centre of position")
                     # Update vacuum_config.yaml with the picked position
-                    config = Utils.read_yaml(config_file) # Read the file again
+                    config = Utils.read_yaml(self.config_file) # Read the file again
 
                     # # Calculate the offset if the part is no longer in centre of bed
                     part_x, part_y = self.config['centre'].split(',')
@@ -134,7 +143,7 @@ class MainEngine:
                 ]
 
                 # Update configuration
-                Utils.write_yaml(config_file, config, key_order)
+                Utils.write_yaml(self.config_file, config, key_order)
                 print("Configuration updated with the selected position.")
 
                 # Continue with the existing functionality
@@ -143,9 +152,62 @@ class MainEngine:
                 self.vacuum_pnp_tool.generate_gcode()
 
                 # Inject the g-code at the layer corresponding to that coordinate
-                self.vacuum_pnp_tool.inject_gcode_given_coordinates(output_directory)
+                self.vacuum_pnp_tool.inject_gcode_given_coordinates(self.output_directory)
+        elif user_in == 2:
+            print("Injecting G-Code after the 'END PRINT' Command")
+            viewer.start()
+            picked_position = viewer.get_selected_point()
+            if picked_position:
+                if self.config.get('centre', None):
+                    print("Centre position has been given")
+                    print("Injecting with offset from centre of position")
+                    # Update vacuum_config.yaml with the picked position
+                    config = Utils.read_yaml(self.config_file) # Read the file again
+
+                    # # Calculate the offset if the part is no longer in centre of bed
+                    part_x, part_y = self.config['centre'].split(',')
+                    bed_center_x, bed_center_y = 135, 162
+
+                    # # Dynamic offsets: Distance from bed center to part center
+                    offset_x = bed_center_x - float(part_x) # this should be 35
+                    offset_y = bed_center_y - float(part_y) # this should be 62
+
+                    # # Adjust the picked positions by the dynamic offsets
+                    x_pos = picked_position[0] - offset_x -9.47
+                    y_pos = picked_position[1] - offset_y -10.2
+                    z_pos = picked_position[2]  + 1
+                else:
+                    print("Injecting without offset from centre as not given")
+                    x_pos = float(f"{picked_position[0]:.3f}") - 9.47
+                    y_pos = float(f"{picked_position[1]:.3f}") - 10.2
+                    z_pos = float(f"{picked_position[2]:.3f}") + 1
+
+                config['startX'] = f"{x_pos:.2f}"
+                config['startY'] = f"{y_pos:.2f}"
+                config['startZ'] = f"{z_pos:.2f}"
+                # Preparation to write_yaml_function
+                key_order = [
+                    'zHop_mm',
+                    'startX',
+                    'startY',
+                    'startZ',
+                    'suctionState',
+                    'endX',
+                    'endY',
+                    'endZ'
+                ]
+
+                # Update configuration
+                Utils.write_yaml(self.config_file, config, key_order)
+                print("Configuration updated with the selected position.")
+
+                # Continue with the existing functionality
+                self.vacuum_pnp_tool.load_config()
+                self.vacuum_pnp_tool.read_gcode()
+                self.vacuum_pnp_tool.generate_gcode()
+                self.vacuum_pnp_tool.inject_gcode_final_layer(self.output_directory)
         else:
-            print("Invalid option. Please select between 1-3.")
+            print("Invalid option selected! Select 1-2!")
 
     def _run_tools(self):
         """Render Tool Option Menu"""
