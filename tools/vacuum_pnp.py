@@ -151,6 +151,50 @@ G91 ; Set back to relative positioning
 
         print(f"G-code injected and saved to {output_file}\n")
 
+    def inject_gcode_final_layer(self, output_path):
+        """Injects the generated G-code at the closest line based on user-provided coordinates into a new file."""
+        if not self.gcode_content:
+            print("Error: G-code content is empty. Please read the G-code file first.")
+            return
+
+        if not self.injected_gcode:
+            print("Error: No G-code injection generated. Please generate G-code first.")
+            return
+
+        # Coordinates to inject the G-code
+        target_x = (self.startX)
+        target_y = (self.startY)
+        target_z = (self.startZ)
+
+        print("Target values selected")
+        print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
+
+        print(f"Injecting target values: {target_x, target_y, target_z}")
+
+        # Inject the G-code at the closest point
+        with open(self.filename, 'r') as f:
+            lines = f.readlines()
+
+        # Find the line containing the 'END_PRINT' marker
+        try:
+            end_print_index = next(i for i, line in enumerate(lines) if 'END_PRINT' in line)
+        except StopIteration:
+            print("Error: 'END_PRINT' marker not found in the G-code file.")
+            return
+
+        # Split the generated G-code into lines and insert them before 'END_PRINT'
+        custom_gcode_lines = self.injected_gcode.splitlines()
+        lines[end_print_index:end_print_index] = [line + '\n' for line in custom_gcode_lines]
+
+        # Define the output file path
+        output_file = Utils.get_resource_path(os.path.join(output_path, os.path.basename(self.filename)))
+
+        # Write the modified lines back to the file
+        with open(output_file, 'w') as f:
+            f.writelines(lines)
+
+        print(f"G-code injected and saved to {output_file}\n")
+
     def _find_lines_at_closest_z(self, target_z):
         """Finds the closest Z height and returns the lines that match this Z height."""
         closest_z = None
