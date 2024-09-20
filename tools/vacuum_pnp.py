@@ -110,15 +110,15 @@ G91 ; Set back to relative positioning
             return
 
         # Coordinates to inject the G-code
-        target_x = self.startX
-        target_y = self.startY
-        target_z = self.startZ
+        target_x = (self.startX)
+        target_y = (self.startY)
+        target_z = (self.startZ)
 
         print("Target values selected")
         print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
 
         # Find the closest Z-coordinate in the file
-        closest_z, lines_at_z = self._find_lines_at_closest_z(target_z)
+        closest_z, lines_at_z = self._find_lines_at_closest_z(target_z-1)
 
         if not lines_at_z:
             print(f"No coordinates found at or near Z={target_z:.2f}")
