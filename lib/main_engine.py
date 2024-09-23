@@ -6,6 +6,7 @@ from lib.prusa_slicer import PrusaSlicer
 from lib.simulation import SimulationProcessor
 from lib.animation import ToolpathAnimator
 from tools.vacuum_pnp import VacuumPnP
+from tools.screwdriver import ScrewDriver
 
 class MainEngine:
     """Main Engine Class for running the overall program"""
@@ -13,8 +14,10 @@ class MainEngine:
         self.config = Utils.read_yaml(r'configs/config.yaml')
         self.slicer = PrusaSlicer(self.config)    
         self.vacuum_pnp_tool = None
+        self.screwdriver_tool = None
         self.filename = None
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DOCUMENTATION AND BACK-END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _output_doc(self):
         """Output documentation to the user"""
         Utils.sleep(0.5)
@@ -39,6 +42,15 @@ class MainEngine:
         print("Good luck and enjoy the software!\n")
         Utils.sleep(1)
 
+    def _read_config(self):
+        """Method to read SupremeSlicer config file"""
+        Utils.sleep(1)
+        start_time = Utils.start_timer()
+        print("\n")
+        Utils.print_yaml(Utils.get_resource_path(r'configs\config.yaml'))
+        Utils.stop_timer(start_time)
+        print("\n")
+
     def _run_slicer(self):
         """Run the native Supreme Slicer"""
         start_time = Utils.start_timer()
@@ -62,6 +74,7 @@ class MainEngine:
         self.filename = output_gcode_path
         self.output_directory = output_directory
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~VACUUM TOOL IMPLEMENTATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _vacuum_tool(self):
         """Load Vacuum Tool Menu Options"""
         print("Loading VacuumPnP tool\n")
@@ -208,7 +221,98 @@ class MainEngine:
                 self.vacuum_pnp_tool.inject_gcode_final_layer(self.output_directory)
         else:
             print("Invalid option selected! Select 1-2!")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~GRIPPER TOOL IMPLEMENTATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+    def _gripper(self):
+        """Load Vacuum Tool Menu Options"""
+        print("Loading Gripper tool\n")
+        self.config_file = Utils.get_resource_path('tools/gripper_config.yaml')
 
+        self.output_directory = self.config['output_dir']
+        print(f"Output directory is:{self.output_directory}")
+        print(f"Found G-code file: {self.filename}")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~SCREWDRIVER IMPLEMENTATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+    def _screwdriver(self):
+        """Load Screwdriver Tool Menu Options"""
+        print("Loading Screwdriver tool\n")
+        self.config_file = Utils.get_resource_path('tools/screwdriver_config.yaml')
+
+        self.output_directory = self.config['output_dir']
+        print(f"Output directory is:{self.output_directory}")
+        print(f"Found G-code file: {self.filename}")
+
+        print("\nWould you like to...")
+        print("1. Generate and inject Gcode")
+        print("2. Read Gcode file output")
+        print("3. Render STL Viewer and auto-inject coordinate")
+
+        self.screwdriver_tool = ScrewDriver(self.filename, self.config_file)
+        user_in = int(input())
+
+        if user_in == 2:
+            self.screwdriver_tool.read_gcode()
+            self.screwdriver_tool.print_injected_gcode()
+        elif user_in == 3:
+            self._run_vacuum_stl_viewer()
+        else:
+            print("Invalid option. Please select between 1-3.")
+
+    def _run_vacuum_stl_viewer(self):
+        """Function to handle backend for STL Viewer within Vacuum Injection tool"""
+        bed_shape = "20x75,250x75,250x250,20x250"
+    
+        print("Injecting G-Code after the 'END PRINT' Command")
+        viewer = STLViewer(self.config['input_stl'], self.filename, self.config, bed_shape)
+        viewer.start()
+        picked_position = viewer.get_selected_point()
+        if picked_position:
+            if self.config.get('centre', None):
+                print("Centre position has been given")
+                print("Injecting with offset from centre of position")
+                # Update vacuum_config.yaml with the picked position
+                config = Utils.read_yaml(self.config_file) # Read the file again
+
+                # # Calculate the offset if the part is no longer in centre of bed
+                part_x, part_y = self.config['centre'].split(',')
+                bed_center_x, bed_center_y = 135, 162
+
+                # # Dynamic offsets: Distance from bed center to part center
+                offset_x = bed_center_x - float(part_x) # this should be 35
+                offset_y = bed_center_y - float(part_y) # this should be 62
+
+                # # Adjust the picked positions by the dynamic offsets
+                x_pos = picked_position[0] - offset_x -9.47
+                y_pos = picked_position[1] - offset_y -10.2
+                z_pos = picked_position[2]  + 1
+            else:
+                print("Injecting without offset from centre as not given")
+                x_pos = float(f"{picked_position[0]:.3f}") - 9.47
+                y_pos = float(f"{picked_position[1]:.3f}") - 10.2
+                z_pos = float(f"{picked_position[2]:.3f}") + 1
+
+            config['startX'] = f"{x_pos:.2f}"
+            config['startY'] = f"{y_pos:.2f}"
+            config['startZ'] = f"{z_pos:.2f}"
+            # Preparation to write_yaml_function
+            key_order = [
+                'zHop_mm',
+                'startX',
+                'startY',
+                'startZ',
+                'screwType',
+            ]
+
+            # Update configuration
+            Utils.write_yaml(self.config_file, config, key_order)
+            print("Configuration updated with the selected position.")
+
+            # Continue with the existing functionality
+            self.screwdriver_tool.load_config()
+            self.screwdriver_tool.read_gcode()
+            self.screwdriver_tool.generate_gcode()
+            self.screwdriver_tool.inject_gcode_final_layer(self.output_directory)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~TOOL BAR MENU OPTIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _run_tools(self):
         """Render Tool Option Menu"""
         print("Select a tool to enter:")
@@ -223,8 +327,14 @@ class MainEngine:
         user_in = int(input())
         if user_in == 1:
             self._vacuum_tool()
+        elif user_in == 2:
+            self._screwdriver()
+        elif user_in == 3:
+            self._gripper()
+        elif user_in == 4:
+            Utils.exit_on('Thank you for runnning the program\n')
         else:
-            print("\nTool not programmed yet. Sorry!\n")
+            print("\nInvalid option selected!\n")
 
     def _get_part_info(self):
         """Method to get part information"""
@@ -285,6 +395,7 @@ class MainEngine:
         except Exception as e:
             raise Exception(f"An unexpected error occurred: {e}")
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~SIMULATOIN OVERVIEW~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _run_stl_viewer(self):
         """Render the stl visually"""
         try:
@@ -369,15 +480,6 @@ class MainEngine:
             raise IOError(f"IO error: {ioe}")
         except Exception as e:
             raise Exception(f"An unexpected error occurred: {e}")
-
-    def _read_config(self):
-        """Method to read SupremeSlicer config file"""
-        Utils.sleep(1)
-        start_time = Utils.start_timer()
-        print("\n")
-        Utils.print_yaml(Utils.get_resource_path(r'configs\config.yaml'))
-        Utils.stop_timer(start_time)
-        print("\n")
 
     def cli(self):
         """Command-line interface for the SupremeSlicer application."""
