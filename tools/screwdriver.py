@@ -131,7 +131,6 @@ G91 ; Set back to relative positioning
                             layers[z_height] = i
                         except ValueError:
                             continue
-
         return layers
 
     def print_injected_gcode(self):

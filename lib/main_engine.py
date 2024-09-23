@@ -242,22 +242,21 @@ class MainEngine:
         print(f"Found G-code file: {self.filename}")
 
         print("\nWould you like to...")
-        print("1. Generate and inject Gcode")
-        print("2. Read Gcode file output")
-        print("3. Render STL Viewer and auto-inject coordinate")
+        print("1. Read Gcode file output")
+        print("2. Render STL Viewer and auto-inject coordinate")
 
         self.screwdriver_tool = ScrewDriver(self.filename, self.config_file)
         user_in = int(input())
 
-        if user_in == 2:
+        if user_in == 1:
             self.screwdriver_tool.read_gcode()
             self.screwdriver_tool.print_injected_gcode()
-        elif user_in == 3:
-            self._run_vacuum_stl_viewer()
+        elif user_in == 2:
+            self._run_screwdriver_stl_viewer()
         else:
             print("Invalid option. Please select between 1-3.")
 
-    def _run_vacuum_stl_viewer(self):
+    def _run_screwdriver_stl_viewer(self):
         """Function to handle backend for STL Viewer within Vacuum Injection tool"""
         bed_shape = "20x75,250x75,250x250,20x250"
     
