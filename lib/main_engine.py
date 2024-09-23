@@ -7,6 +7,7 @@ from lib.simulation import SimulationProcessor
 from lib.animation import ToolpathAnimator
 from tools.vacuum_pnp import VacuumPnP
 from tools.screwdriver import ScrewDriver
+from tools.gripper import Gripper
 
 class MainEngine:
     """Main Engine Class for running the overall program"""
@@ -15,6 +16,7 @@ class MainEngine:
         self.slicer = PrusaSlicer(self.config)    
         self.vacuum_pnp_tool = None
         self.screwdriver_tool = None
+        self.gripper_tool = None
         self.filename = None
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DOCUMENTATION AND BACK-END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -230,6 +232,24 @@ class MainEngine:
         self.output_directory = self.config['output_dir']
         print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")
+
+        print("\nWould you like to...")
+        print("1. Read Gcode file output")
+        print("2. Inject the gripper tool code using your parsed values")
+
+        self.gripper_tool = Gripper(self.filename, self.config_file)
+        user_in = int(input())
+
+        if user_in == 1:
+            self.gripper_tool.read_gcode()
+            self.gripper_tool.print_injected_gcode()
+        elif user_in == 2:
+            self.gripper_tool.load_config()
+            self.gripper_tool.read_gcode()
+            self.gripper_tool.generate_gcode()
+            self.gripper_tool.inject_gcode_final_layer(self.output_directory)
+        else:
+            print("Invalid option. Please select between 1-3.")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~SCREWDRIVER IMPLEMENTATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _screwdriver(self):
