@@ -251,6 +251,22 @@ class MainEngine:
         else:
             print("Invalid option. Please select between 1-3.")
 
+    def _run_gripper_logic_tool(self):
+        """Check the gripper position argument. If it is 1, ask user for values to update config"""
+        print("Running gripper logic")
+        config = Utils.read_yaml(self.config_file) # Read the file again
+
+        if config['gripperPosition'] == 0:
+            self.gripper_tool.load_config()
+            self.gripper_tool.read_gcode()
+            self.gripper_tool.generate_gcode()
+            self.gripper_tool.inject_gcode_final_layer(self.output_directory)
+        elif config['gripperPosition'] == 1:
+            print("Would you like gripper rotation?")
+            # Logic to be finished
+        else:
+            print("Invalid option selected. Please select 1 or 2!")
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~SCREWDRIVER IMPLEMENTATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _screwdriver(self):
         """Load Screwdriver Tool Menu Options"""
