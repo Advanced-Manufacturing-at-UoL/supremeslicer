@@ -63,7 +63,7 @@ G0 Z{self.endZ:.2f} ; Lower Z to end position
 GRIPPER_CLOSE CLOSURE={self.gripperOpenAngle} ; Open Gripper to drop the part
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single extruder
-G91 ; Set back to relative positioning 
+G90 
 ; Gripper TOOL G CODE INJECTION END
 ;-----------------------------------------------
 """

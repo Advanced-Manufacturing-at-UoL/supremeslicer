@@ -52,7 +52,7 @@ G0 Z{self.startZ:.2f} ; Lower Z to start position
 INSERT_SCREW SCREW={self.screwType} ; Insert Screw
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single extruder
-G91 ; Set back to relative positioning 
+G90 ; Ensure we stay in absolute
 ; ScrewDriver TOOL G CODE INJECTION END
 ;-----------------------------------------------
 """

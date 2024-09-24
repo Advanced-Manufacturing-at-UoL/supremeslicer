@@ -43,21 +43,23 @@ class VacuumPnP:
         except IOError as e:
             print(f"Error reading G-code file: {e}")
 
+# Change it so it grips from the centre of the part
     def generate_gcode(self):
         """Generates the G-code injection based on the parameters from the YAML configuration."""
         self.injected_gcode = f""";-----------------------------------------------
 ; VacuumPnP TOOL G CODE INJECTION START
-; VIBRATE FIRST
+; -------------VIBRATE FIRST 
 G90 ; Ensure we're using absolute positioning rather than relative
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=3 ; Pickup the Gripper tool
-GRIPPER_CLOSE CLOSURE={self.gripperOpenAngle} ; Open Gripper before using tool
-G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
-G0 Z{self.startZ:.2f} ; Lower Z to start position
-GRIPPER_CLOSE CLOSURE={self.gripperCloseAngle} ; Close Gripper around part
+GRIPPER_CLOSE CLOSURE=45 ; Open Gripper before using tool
+G0 X100 Y100 ; Move to where you want to suck in X,Y
+G0 Z0 ; Lower Z to start position
+GRIPPER_CLOSE CLOSURE=-18 ; Close Gripper around part
 GRIPPER_BUZZ CYCLES=100 ; Vibrate the part to separate it from the bed
-GRIPPER_CLOSE CLOSURE = {self.gripperOpenAngle} ; Open Gripper to release grip
+GRIPPER_CLOSE CLOSURE =45 ; Open Gripper to release grip
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
+;--------------START VACUUM INJECTION
 TOOL_PICKUP T=2 ; Pickup the vacuum tool
 G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
 G0 Z{self.startZ:.2f} ; Lower Z to start position
@@ -68,7 +70,7 @@ G0 Z{self.endZ:.2f} ; Move to height of drop
 SET_PIN PIN=VACUUM VALUE={0.00} ; Stop Suction state
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single extruder
-G91 ; Set back to relative positioning 
+G90 ; Ensure we stay in absolute
 ; VacuumPnP TOOL G CODE INJECTION END
 ;-----------------------------------------------
 """
