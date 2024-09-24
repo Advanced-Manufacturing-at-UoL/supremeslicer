@@ -1,10 +1,10 @@
 zHop_mm: 100.0
-startX: 108.46
-startY: 108.13
-startZ: 21.00
-endX: 140.0
-endY: 150.0
-endZ: 60.0
+startX: 100.72
+startY: 100.10
+startZ: 0.00
+endX: 200.0
+endY: 200.0
+endZ: 1.0
 gripperCloseAngle: -18
-gripperOpenAngle: -3
+gripperOpenAngle: 45
 gripperPosition: 0

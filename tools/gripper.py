@@ -21,9 +21,9 @@ class Gripper:
             self.startX = config.get('startX', 100.0)
             self.startY = config.get('startY', 100.0)
             self.startZ = config.get('startZ', 100.0)
-            self.endX = config.get('startX', 100.0)
-            self.endY = config.get('startY', 100.0)
-            self.endZ = config.get('startZ', 100.0)
+            self.endX = config.get('endX', 100.0)
+            self.endY = config.get('endY', 100.0)
+            self.endZ = config.get('endZ', 100.0)
             self.gripperCloseAngle = config.get('gripperCloseAngle', -18)
             self.gripperOpenAngle = config.get('gripperOpenAngle', -3)
             self.gripperPosition = config.get('gripperPosition', 0)
@@ -51,10 +51,11 @@ class Gripper:
 ; Gripper TOOL G CODE INJECTION START
 G90 ; Ensure we're using absolute positioning rather than relative
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
-TOOL_PICKUP T=3 ; Pickup the Screwdriver tool
+TOOL_PICKUP T=3 ; Pickup the Gripper tool
 GRIPPER_CLOSE CLOSURE={self.gripperOpenAngle} ; Open Gripper after you've picked it up
 G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
 G0 Z{self.startZ:.2f} ; Lower Z to start position
+GRIPPER_BUZZ CYCLES=100 AMPLITUDE=0.1 ACCELERATION=50000 ; Vibrate the part to separate it from the bed
 GRIPPER_CLOSE CLOSURE={self.gripperCloseAngle} ; Close Gripper around part
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 G0 X{self.endX:.2f} Y{self.endY:.2f} ; Move to where you want to drop the part in X, Y and Z
