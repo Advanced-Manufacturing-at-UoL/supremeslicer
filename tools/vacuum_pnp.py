@@ -47,7 +47,16 @@ class VacuumPnP:
         """Generates the G-code injection based on the parameters from the YAML configuration."""
         self.injected_gcode = f""";-----------------------------------------------
 ; VacuumPnP TOOL G CODE INJECTION START
+; VIBRATE FIRST
 G90 ; Ensure we're using absolute positioning rather than relative
+G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
+TOOL_PICKUP T=3 ; Pickup the Gripper tool
+GRIPPER_CLOSE CLOSURE={self.gripperOpenAngle} ; Open Gripper before using tool
+G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
+G0 Z{self.startZ:.2f} ; Lower Z to start position
+GRIPPER_CLOSE CLOSURE={self.gripperCloseAngle} ; Close Gripper around part
+GRIPPER_BUZZ CYCLES=100 ; Vibrate the part to separate it from the bed
+GRIPPER_CLOSE CLOSURE = {self.gripperOpenAngle} ; Open Gripper to release grip
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=2 ; Pickup the vacuum tool
 G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y

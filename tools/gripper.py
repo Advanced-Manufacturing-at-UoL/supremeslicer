@@ -56,8 +56,7 @@ GRIPPER_CLOSE CLOSURE={self.gripperOpenAngle} ; Open Gripper after you've picked
 G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
 G0 Z{self.startZ:.2f} ; Lower Z to start position
 GRIPPER_CLOSE CLOSURE={self.gripperCloseAngle} ; Close Gripper around part
-GRIPPER_BUZZ CYCLES=100 AMPLITUDE=0.1 ACCELERATION=50000 ; Vibrate the part to separate it from the bed
-P10000 ; Wait 10 seconds so it doesn't stall the motors
+GRIPPER_BUZZ CYCLES=100 ; Vibrate the part to separate it from the bed
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 G0 X{self.endX:.2f} Y{self.endY:.2f} ; Move to where you want to drop the part in X, Y and Z
 G0 Z{self.endZ:.2f} ; Lower Z to end position
