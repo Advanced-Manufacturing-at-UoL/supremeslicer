@@ -12,7 +12,6 @@ from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
-# Assuming STLViewer is defined in stl_viewer.py
 
 from lib.simulation import SimulationProcessor
 
@@ -38,7 +37,7 @@ class STLViewer:
         for coord in bed_shape.split(','):
             x, y = map(float, coord.split('x'))
             points.append((x, y))
-        
+
         # Calculate the center of the bed
         min_x = min(p[0] for p in points)
         max_x = max(p[0] for p in points)
@@ -155,7 +154,7 @@ class STLViewer:
             x_pos = float(f"{picked_position[0]:.3f}") - 9.47
             y_pos = float(f"{picked_position[1]:.3f}") - 10.2
             z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
-        
+
         if picker.GetActor() is not None:
             print(f"Picked position with offsets: {x_pos:.2f} {y_pos:.2f} {z_pos:.2f}\n")
             self.marker_actor.SetPosition(picked_position)

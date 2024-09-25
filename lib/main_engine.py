@@ -81,7 +81,6 @@ class MainEngine:
         """Load Vacuum Tool Menu Options"""
         print("Loading VacuumPnP tool\n")
         self.config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
-
         self.output_directory = self.config['output_dir']
         print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")
@@ -228,7 +227,6 @@ class MainEngine:
         """Load Vacuum Tool Menu Options"""
         print("Loading Gripper tool\n")
         self.config_file = Utils.get_resource_path('tools/gripper_config.yaml')
-
         self.output_directory = self.config['output_dir']
         print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")
@@ -262,8 +260,8 @@ class MainEngine:
             self.gripper_tool.generate_gcode()
             self.gripper_tool.inject_gcode_final_layer(self.output_directory)
         elif config['gripperPosition'] == 1:
-            print("Would you like gripper rotation?")
-            # Logic to be finished
+            print("Gripper rotation has not been implemented yet!")
+            print("Please open the gripper config yaml file and set gripperPosition value to 0\n")
         else:
             print("Invalid option selected. Please select 1 or 2!")
 
@@ -272,7 +270,6 @@ class MainEngine:
         """Load Screwdriver Tool Menu Options"""
         print("Loading Screwdriver tool\n")
         self.config_file = Utils.get_resource_path('tools/screwdriver_config.yaml')
-
         self.output_directory = self.config['output_dir']
         print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")

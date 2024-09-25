@@ -47,7 +47,7 @@ class ScrewDriver:
 G90 ; Ensure we're using absolute positioning rather than relative
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=4 ; Pickup the Screwdriver tool
-G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
+G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to insert the screw
 G0 Z{self.startZ:.2f} ; Lower Z to start position
 INSERT_SCREW SCREW={self.screwType} ; Insert Screw
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
@@ -75,7 +75,6 @@ G90 ; Ensure we stay in absolute
 
         print("Target values selected")
         print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
-
         print(f"Injecting target values: {target_x, target_y, target_z}")
 
         # Inject the G-code at the closest point

@@ -47,16 +47,12 @@ class VacuumPnP:
         except IOError as e:
             print(f"Error reading G-code file: {e}")
 
-# Change it so it grips from the centre of the part
     def generate_gcode(self):
         """Generates the G-code injection based on the parameters from the YAML configuration."""
         self.gripper_tool.generate_vibration()
 
-        # Initialise if none. Remember that the injected g-code for the gripper tool is an attribute of a different class
         self.injected_gcode = "" if self.injected_gcode is None else self.injected_gcode
-
-        # Append the Gripper's injected G-code to the VacuumPnP G-code
-        self.injected_gcode += self.gripper_tool.injected_gcode  # Include the vibration G-code
+        self.injected_gcode += self.gripper_tool.injected_gcode # Append Vacuum G-Code with Gripper's Vibration G-Code
 
         self.injected_gcode += f""";-----------------------------------------------
 ; VacuumPnP TOOL G CODE INJECTION START
@@ -179,7 +175,6 @@ G90 ; Ensure we stay in absolute
 
         print("Target values selected")
         print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
-
         print(f"Injecting target values: {target_x, target_y, target_z}")
 
         # Inject the G-code at the closest point
@@ -228,12 +223,11 @@ G90 ; Ensure we stay in absolute
                             lines_at_z = []
                         if z == closest_z:
                             lines_at_z.append((i))
-        
+
         print(f"The closest z found was: {closest_z}")
         print(f"The lines at this z position was: {lines_at_z}\n")
 
         return closest_z, lines_at_z
-
 
     def _find_closest_xy_in_lines(self, start_index, target_x=None, target_y=None):
         """Search the G-code file from a specific index onward, looking for the closest (X, Y) coordinates."""

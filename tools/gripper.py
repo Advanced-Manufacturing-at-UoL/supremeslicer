@@ -1,5 +1,4 @@
 import os
-import math
 from lib.utils import Utils
 from lib.simulation import SimulationProcessor
 
@@ -69,11 +68,9 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 
     def generate_gcode(self):
         """Generates the G-code injection based on the parameters from the YAML configuration."""
-        
-        # Call the vibration first
-        self.generate_vibration()
+        self.generate_vibration() # Call the vibration first
 
-        # Append the vibration G-Code to the start of the full sequence
+        # Prepend gripper g-code with vibration
         self.injected_gcode += f""";-----------------------------------------------
 ; Gripper TOOL G CODE INJECTION START
 G90 ; Ensure we're using absolute positioning rather than relative
@@ -112,7 +109,6 @@ G90
 
         print("Target values selected")
         print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
-
         print(f"Injecting target values: {target_x, target_y, target_z}")
 
         # Inject the G-code at the closest point
