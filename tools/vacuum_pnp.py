@@ -29,6 +29,7 @@ class VacuumPnP:
             self.endX = config.get('endX', 150.0)
             self.endY = config.get('endY', 150.0)
             self.endZ = config.get('endZ', 150.0)
+            self.vibrate = config.get('vibrate', 0)
 
             print(f"Configuration file {self.config_file} loaded successfully.")
         except FileNotFoundError:
@@ -49,10 +50,11 @@ class VacuumPnP:
 
     def generate_gcode(self):
         """Generates the G-code injection based on the parameters from the YAML configuration."""
-        self.gripper_tool.generate_vibration()
-
         self.injected_gcode = "" if self.injected_gcode is None else self.injected_gcode
-        self.injected_gcode += self.gripper_tool.injected_gcode # Append Vacuum G-Code with Gripper's Vibration G-Code
+
+        if self.vibrate:
+            print(f"Vibration argument detected {self.vibrate}\n")
+            self.injected_gcode += self.gripper_tool.injected_gcode # Append Vacuum G-Code with Gripper's Vibration G-Code
 
         self.injected_gcode += f""";-----------------------------------------------
 ; VacuumPnP TOOL G CODE INJECTION START

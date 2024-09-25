@@ -8,3 +8,4 @@ endZ: 1.0
 gripperCloseAngle: -18
 gripperOpenAngle: 45
 gripperPosition: 0
+vibrate: 1
