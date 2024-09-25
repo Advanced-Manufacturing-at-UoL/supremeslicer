@@ -147,14 +147,14 @@ class STLViewer:
             # # Adjust the picked positions by the dynamic offsets
             x_pos = picked_position[0] - offset_x -9.47
             y_pos = picked_position[1] - offset_y -10.2
-            z_pos = picked_position[2]  + 1
+            z_pos = picked_position[2]  + 1 -2.1
         else:
             print("Centre position not given")
             print("Just using tool offset")
             # Static offset calculation
             x_pos = float(f"{picked_position[0]:.3f}") - 9.47
             y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-            z_pos = float(f"{picked_position[2]:.3f}") + 1
+            z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
         
         if picker.GetActor() is not None:
             print(f"Picked position with offsets: {x_pos:.2f} {y_pos:.2f} {z_pos:.2f}\n")

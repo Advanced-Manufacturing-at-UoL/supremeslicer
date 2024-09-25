@@ -9,7 +9,7 @@ class Gripper:
         self.filename = filename
         self.config_file = config_file
         self.gcode_content = None
-        self.injected_gcode = None # Maybe make this into a list?
+        self.injected_gcode = ""
         simulation_processor = SimulationProcessor(self.filename)
         self.centre_of_mass = simulation_processor.get_centre_of_mass()
 
@@ -57,7 +57,7 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=3 ; Pickup the Gripper tool
 GRIPPER_CLOSE CLOSURE={self.gripperOpenAngle} ; Open Gripper after you've picked it up
 G0 X{self.centre_of_mass[0]:.2f} Y{self.centre_of_mass[1]:.2f} ; Move to where you want to grip in X, Y
-G0 Z{self.startZ:.2f} ; Lower Z to start position
+G0 Z0 ; Lower Z to start position
 GRIPPER_CLOSE CLOSURE={self.gripperCloseAngle} ; Close Gripper around part
 GRIPPER_BUZZ CYCLES=100 ; Vibrate the part to separate it from the bed
 GRIPPER_CLOSE CLOSURE={self.gripperOpenAngle} ; Open Gripper after you've picked it up
@@ -65,6 +65,7 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 ; Gripper TOOL VIBRATION END
 ;-----------------------------------------------
 """     
+        print(f"Generated vibration with the following data:\n{self.injected_gcode}")
 
     def generate_gcode(self):
         """Generates the G-code injection based on the parameters from the YAML configuration."""

@@ -134,12 +134,12 @@ class MainEngine:
                     # # Adjust the picked positions by the dynamic offsets
                     x_pos = picked_position[0] - offset_x -9.47
                     y_pos = picked_position[1] - offset_y -10.2
-                    z_pos = picked_position[2]  + 1
+                    z_pos = picked_position[2]  + 1 -2.1
                 else:
                     print("Injecting without offset from centre as not given")
                     x_pos = float(f"{picked_position[0]:.3f}") - 9.47
                     y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-                    z_pos = float(f"{picked_position[2]:.3f}") + 1
+                    z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
 
                 config['startX'] = f"{x_pos:.2f}"
                 config['startY'] = f"{y_pos:.2f}"
@@ -190,12 +190,12 @@ class MainEngine:
                     # # Adjust the picked positions by the dynamic offsets
                     x_pos = picked_position[0] - offset_x -9.47
                     y_pos = picked_position[1] - offset_y -10.2
-                    z_pos = picked_position[2]  + 1
+                    z_pos = picked_position[2]  + 1 -2.1
                 else:
                     print("Injecting without offset from centre as not given")
                     x_pos = float(f"{picked_position[0]:.3f}") - 9.47
                     y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-                    z_pos = float(f"{picked_position[2]:.3f}") + 1
+                    z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
 
                 config['startX'] = f"{x_pos:.2f}"
                 config['startY'] = f"{y_pos:.2f}"
@@ -318,12 +318,12 @@ class MainEngine:
                 # # Adjust the picked positions by the dynamic offsets
                 x_pos = picked_position[0] - offset_x -9.47
                 y_pos = picked_position[1] - offset_y -10.2
-                z_pos = picked_position[2]  + 1
+                z_pos = picked_position[2]  + 1 -2.1
             else:
                 print("Injecting without offset from centre as not given")
                 x_pos = float(f"{picked_position[0]:.3f}") - 9.47
                 y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-                z_pos = float(f"{picked_position[2]:.3f}") + 1
+                z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
 
             config['startX'] = f"{x_pos:.2f}"
             config['startY'] = f"{y_pos:.2f}"
