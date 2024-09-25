@@ -40,7 +40,7 @@ class MainEngine:
         Utils.sleep(0.5)
         print("Use the simulation tool to see each layer better (with the toolpath)")
         Utils.sleep(0.5)
-        print("Use the animation tool quickly obtain a render\n")
+        print("Use the animation tool to quickly obtain a render\n")
         print("Good luck and enjoy the software!\n")
         Utils.sleep(1)
 
@@ -224,7 +224,7 @@ class MainEngine:
             print("Invalid option selected! Select 1-2!")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~GRIPPER TOOL IMPLEMENTATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _gripper(self):
-        """Load Vacuum Tool Menu Options"""
+        """Load Gripper Tool Menu Options"""
         print("Loading Gripper tool\n")
         self.config_file = Utils.get_resource_path('tools/gripper_config.yaml')
         self.output_directory = self.config['output_dir']
@@ -525,7 +525,7 @@ class MainEngine:
             print("1. Read Config file")
             print("2. Slice a g-code file")
             print("3. Access tools")
-            print("4. Obtain Part informaiton")
+            print("4. Obtain Part information")
             print("5. Run STL Viewer")
             print("6. Create Simulation")
             print("7. Render Animation")
