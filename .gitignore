@@ -6,3 +6,5 @@
 main.exe
 error_log.txt
 tools/vacuum_config.yaml
+tools/screwdriver_config.yaml
+tools/gripper_config.yaml

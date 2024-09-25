@@ -171,7 +171,7 @@ G90 ; Ensure we stay in absolute
         # Coordinates to inject the G-code
         target_x = (self.startX)
         target_y = (self.startY)
-        target_z = (self.startZ) -2.1
+        target_z = (self.startZ)
 
         print("Target values selected")
         print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
