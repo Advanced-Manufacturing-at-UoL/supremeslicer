@@ -1,6 +1,7 @@
 import os
 import math
 from lib.utils import Utils
+from tools.gripper import Gripper
 
 class VacuumPnP:
     """Class for handling functions for the VacuumPnP tool"""
@@ -8,10 +9,13 @@ class VacuumPnP:
         self.filename = filename
         self.config_file = config_file
         self.gcode_content = None
-        self.injected_gcode = None
+        self.injected_gcode = ""
 
         # Load configuration from YAML file
         self.load_config()
+
+        # Initialise the gripper tool for vibration
+        self.gripper_tool = Gripper(self.filename, self.config_file)
 
     def load_config(self):
         """Loads the parameters from the YAML configuration file."""
@@ -26,7 +30,7 @@ class VacuumPnP:
             self.endY = config.get('endY', 150.0)
             self.endZ = config.get('endZ', 150.0)
 
-            print("Configuration loaded successfully.")
+            print(f"Configuration file {self.config_file} loaded successfully.")
         except FileNotFoundError:
             raise FileNotFoundError(f"Error: Configuration file not found: {self.config_file}")
         except Exception as e:
@@ -45,10 +49,13 @@ class VacuumPnP:
 
     def generate_gcode(self):
         """Generates the G-code injection based on the parameters from the YAML configuration."""
-        self.injected_gcode = f""";-----------------------------------------------
+        self.gripper_tool.generate_vibration()
+
+        self.injected_gcode = "" if self.injected_gcode is None else self.injected_gcode
+        self.injected_gcode += self.gripper_tool.injected_gcode # Append Vacuum G-Code with Gripper's Vibration G-Code
+
+        self.injected_gcode += f""";-----------------------------------------------
 ; VacuumPnP TOOL G CODE INJECTION START
-G90 ; Ensure we're using absolute positioning rather than relative
-G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=2 ; Pickup the vacuum tool
 G0 X{self.startX:.2f} Y{self.startY:.2f} ; Move to where you want to suck in X,Y
 G0 Z{self.startZ:.2f} ; Lower Z to start position
@@ -59,7 +66,7 @@ G0 Z{self.endZ:.2f} ; Move to height of drop
 SET_PIN PIN=VACUUM VALUE={0.00} ; Stop Suction state
 G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 TOOL_PICKUP T=0 ; Pickup the Extruder tool again, but this only works for single extruder
-G91 ; Set back to relative positioning 
+G90 ; Ensure we stay in absolute
 ; VacuumPnP TOOL G CODE INJECTION END
 ;-----------------------------------------------
 """
@@ -112,7 +119,7 @@ G91 ; Set back to relative positioning
         # Coordinates to inject the G-code
         target_x = (self.startX)
         target_y = (self.startY)
-        target_z = (self.startZ)
+        target_z = (self.startZ) -2.1
 
         print("Target values selected")
         print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
@@ -168,7 +175,6 @@ G91 ; Set back to relative positioning
 
         print("Target values selected")
         print(f"G1 X{target_x:.3f} Y{target_y:.3f} Z{target_z:.3f}")
-
         print(f"Injecting target values: {target_x, target_y, target_z}")
 
         # Inject the G-code at the closest point
@@ -217,12 +223,11 @@ G91 ; Set back to relative positioning
                             lines_at_z = []
                         if z == closest_z:
                             lines_at_z.append((i))
-        
+
         print(f"The closest z found was: {closest_z}")
         print(f"The lines at this z position was: {lines_at_z}\n")
 
         return closest_z, lines_at_z
-
 
     def _find_closest_xy_in_lines(self, start_index, target_x=None, target_y=None):
         """Search the G-code file from a specific index onward, looking for the closest (X, Y) coordinates."""

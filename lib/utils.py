@@ -12,7 +12,7 @@ class Utils:
     def read_yaml(file_path):
         """
         Reads  the YAML file content with indentation to show structure accounting for backslashes.
-        
+
         :param file_path: The path to the YAML file.
         """
         try:
@@ -36,7 +36,7 @@ class Utils:
     def write_yaml(file_path, data, key_order):
         """Writes data to a YAML file with keys ordered according to `key_order`."""
         ordered_data = OrderedDict((key, data.get(key)) for key in key_order)
-        
+
         with open(file_path, 'w') as file:
             for key, value in ordered_data.items():
                 # Handle different data types (basic example, customize as needed)
@@ -46,12 +46,12 @@ class Utils:
                         file.write(f"  {subkey}: {subvalue}\n")
                 else:
                     file.write(f"{key}: {value}\n")
-    
+
     @staticmethod
     def print_yaml(file_path):
         """
         Reads and prints the YAML file content with indentation to show structure.
-        
+
         :param file_path: The path to the YAML file.
         """
         yaml_data = Utils.read_yaml(file_path)
@@ -98,7 +98,7 @@ class Utils:
         print(message)
         time.sleep(1)
         sys.exit()
-    
+
     @staticmethod
     def get_resource_path(relative_path):
         path = os.path.abspath(relative_path)

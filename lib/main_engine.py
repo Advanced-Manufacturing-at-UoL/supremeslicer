@@ -81,7 +81,6 @@ class MainEngine:
         """Load Vacuum Tool Menu Options"""
         print("Loading VacuumPnP tool\n")
         self.config_file = Utils.get_resource_path('tools/vacuum_config.yaml')
-
         self.output_directory = self.config['output_dir']
         print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")
@@ -134,12 +133,12 @@ class MainEngine:
                     # # Adjust the picked positions by the dynamic offsets
                     x_pos = picked_position[0] - offset_x -9.47
                     y_pos = picked_position[1] - offset_y -10.2
-                    z_pos = picked_position[2]  + 1
+                    z_pos = picked_position[2]  + 1 -2.1
                 else:
                     print("Injecting without offset from centre as not given")
                     x_pos = float(f"{picked_position[0]:.3f}") - 9.47
                     y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-                    z_pos = float(f"{picked_position[2]:.3f}") + 1
+                    z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
 
                 config['startX'] = f"{x_pos:.2f}"
                 config['startY'] = f"{y_pos:.2f}"
@@ -190,12 +189,12 @@ class MainEngine:
                     # # Adjust the picked positions by the dynamic offsets
                     x_pos = picked_position[0] - offset_x -9.47
                     y_pos = picked_position[1] - offset_y -10.2
-                    z_pos = picked_position[2]  + 1
+                    z_pos = picked_position[2]  + 1 -2.1
                 else:
                     print("Injecting without offset from centre as not given")
                     x_pos = float(f"{picked_position[0]:.3f}") - 9.47
                     y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-                    z_pos = float(f"{picked_position[2]:.3f}") + 1
+                    z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
 
                 config['startX'] = f"{x_pos:.2f}"
                 config['startY'] = f"{y_pos:.2f}"
@@ -228,7 +227,6 @@ class MainEngine:
         """Load Vacuum Tool Menu Options"""
         print("Loading Gripper tool\n")
         self.config_file = Utils.get_resource_path('tools/gripper_config.yaml')
-
         self.output_directory = self.config['output_dir']
         print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")
@@ -251,12 +249,27 @@ class MainEngine:
         else:
             print("Invalid option. Please select between 1-3.")
 
+    def _run_gripper_logic_tool(self):
+        """Check the gripper position argument. If it is 1, ask user for values to update config"""
+        print("Running gripper logic")
+        config = Utils.read_yaml(self.config_file) # Read the file again
+
+        if config['gripperPosition'] == 0:
+            self.gripper_tool.load_config()
+            self.gripper_tool.read_gcode()
+            self.gripper_tool.generate_gcode()
+            self.gripper_tool.inject_gcode_final_layer(self.output_directory)
+        elif config['gripperPosition'] == 1:
+            print("Gripper rotation has not been implemented yet!")
+            print("Please open the gripper config yaml file and set gripperPosition value to 0\n")
+        else:
+            print("Invalid option selected. Please select 1 or 2!")
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~SCREWDRIVER IMPLEMENTATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     def _screwdriver(self):
         """Load Screwdriver Tool Menu Options"""
         print("Loading Screwdriver tool\n")
         self.config_file = Utils.get_resource_path('tools/screwdriver_config.yaml')
-
         self.output_directory = self.config['output_dir']
         print(f"Output directory is:{self.output_directory}")
         print(f"Found G-code file: {self.filename}")
@@ -302,12 +315,12 @@ class MainEngine:
                 # # Adjust the picked positions by the dynamic offsets
                 x_pos = picked_position[0] - offset_x -9.47
                 y_pos = picked_position[1] - offset_y -10.2
-                z_pos = picked_position[2]  + 1
+                z_pos = picked_position[2]  + 1 -2.1
             else:
                 print("Injecting without offset from centre as not given")
                 x_pos = float(f"{picked_position[0]:.3f}") - 9.47
                 y_pos = float(f"{picked_position[1]:.3f}") - 10.2
-                z_pos = float(f"{picked_position[2]:.3f}") + 1
+                z_pos = float(f"{picked_position[2]:.3f}") + 1 -2.1
 
             config['startX'] = f"{x_pos:.2f}"
             config['startY'] = f"{y_pos:.2f}"

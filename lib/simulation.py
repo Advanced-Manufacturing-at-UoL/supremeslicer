@@ -10,7 +10,6 @@ from matplotlib.widgets import Button, Slider
 
 from lib.utils import Utils
 
-
 class SimulationProcessor:
     """Simulation processor class for rendering toolpaths"""
     def __init__(self, filename):
@@ -285,7 +284,7 @@ class SimulationProcessor:
             else:
                 self.vacuum_coords = np.array([]) # Empty if no vacuum coords
                 print("No vacuum g-code was found")
-            
+
             # Set up the plot
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111, projection='3d')
@@ -466,7 +465,7 @@ class SimulationProcessor:
         z_center = sum(z_vals) / len(z_vals)
 
         return x_center, y_center, z_center
-    
+
     def get_part_height(self):
         """Get the height of the object (top layer's Z value)."""
         e_coords, _, _ = self.parse_gcode(self.gcode)
@@ -556,7 +555,7 @@ class SimulationProcessor:
         }
 
         return top_layer_info
-    
+
     def get_centre_of_mass(self):
         """Method to get centre of mass"""
         e_coords, _, _ = self.parse_gcode(self.gcode)
