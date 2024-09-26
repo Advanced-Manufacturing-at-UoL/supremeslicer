@@ -77,7 +77,7 @@
     ```bash
     python main.py
     ```
-- If you wnat to run this as an application, you can do this through running the exe or pressing the shortcut .lnk file.
+- If you want to run this as an application, you can do this through running the exe or pressing the shortcut .lnk file.
     ```bash
     main.exe
     SupremeSlicer.lnk
