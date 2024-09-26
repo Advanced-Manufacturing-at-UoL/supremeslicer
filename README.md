@@ -15,7 +15,7 @@
   - **Gripper Tool**: Injects custom G-code for gripper operations.
 
 - **G-code Toolpath Viewer Tool**:
-  - Visualises overall toolpath or exlusively just the VacuumPnP toolpath frame by frame.
+  - Visualises overall toolpath or exlusively just the selected tool's toolpath frame by frame.
 
 - **Mesh Animation Render Tool**:
   - Visualises the overall part render as an animation in mesh form.
@@ -23,7 +23,7 @@
 - **STL Viewer**:
   - Visualises the input STL selected by the user from the config.yaml file
   - Allows the user to add markers to obtain accurate position of the part.
-  - User can 'auto-inject' where they wish to use the VacuumPnP tool.
+  - User can 'auto-inject' where they wish to use the Screwdriver or the VacuumPnP tool.
 
 ## Tools
 
@@ -34,15 +34,16 @@
      - Custom G-code generation for vacuum operations.
 
 2. **Screwdriver Tool**
-   - **Description**: Manages operations for a screwdriver tool used with the 3D printer.
+   - **Description**: Controls a screwdriver tool to inject a part during printing.
    - **Features**:
      - Custom G-code generation for screwdriver actions.
-     - Integration with SuperSlicer for precise tool control.
+     - Customisable start location with tool movement parameters.
 
 3. **Gripper Tool**
    - **Description**: Controls a gripper tool for handling objects during printing.
    - **Features**:
-     - Adjustable parameters for gripper actions.
+     - Vibration method for part removal.
+     - Adjustable parameters for gripper actions for gripper position/angle.
      - Custom G-code injection for coordinating gripper movements.
 
 ## Getting Started
@@ -65,19 +66,22 @@
     cd supremeslicer
     ```
 
-3. **Install Required Python Packages**:
+3. **Run the Install Script**:
     ```bash
-    pip install -r requirements.txt
+    resources/install.bat
     ```
 
-4. **Copy the contents from below to the main.spec file after running the install command **:
-  - Rebuild the exe with the provided spec file through running:
-```bash 
-pyinstaller --clean main.spec
-```
- 
- - Move the exe to the project directory:
-(Program should be supremeslicer/main.exe)
+4. **Run the program**:
+- You can run this program as either the python script or as the built exe file that you may have just made.
+- If you want to run this as a python script, make sure you're in the parent directory to the main.py file and run:
+    ```bash
+    python main.py
+    ```
+- If you wnat to run this as an application, you can do this through running the exe or pressing the shortcut .lnk file.
+    ```bash
+    main.exe
+    SupremeSlicer.lnk
+    ```
 
 ### Configuration
 
@@ -102,5 +106,4 @@ For questions or support, reach out to Pralish via either contact detail:
 [pralishbusiness@gmail.com](mailto:pralishbusiness@gmail.com)   
   
 Created by Pralish Satyal, 19/07/2024.
-Released by Pralish Satyal, 09/09/2024.
-  
+Released by Pralish Satyal, 27/09/2024.
