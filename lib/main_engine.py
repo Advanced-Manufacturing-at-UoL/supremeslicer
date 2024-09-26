@@ -152,7 +152,8 @@ class MainEngine:
                     'suctionState',
                     'endX',
                     'endY',
-                    'endZ'
+                    'endZ',
+                    'vibrate'
                 ]
 
                 # Update configuration
@@ -208,7 +209,8 @@ class MainEngine:
                     'suctionState',
                     'endX',
                     'endY',
-                    'endZ'
+                    'endZ',
+                    'vibrate'
                 ]
 
                 # Update configuration

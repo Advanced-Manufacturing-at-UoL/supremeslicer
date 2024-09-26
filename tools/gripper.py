@@ -29,6 +29,7 @@ class Gripper:
             self.gripperCloseAngle = config.get('gripperCloseAngle', -18)
             self.gripperOpenAngle = config.get('gripperOpenAngle', -3)
             self.gripperPosition = config.get('gripperPosition', 0)
+            self.vibrate = config.get('vibrate', 0)
 
             print("Configuration loaded successfully.")
         except FileNotFoundError:
@@ -68,7 +69,9 @@ G0 Z{self.zHop_mm:.2f} ; Move to zHop position for clearance
 
     def generate_gcode(self):
         """Generates the G-code injection based on the parameters from the YAML configuration."""
-        self.generate_vibration() # Call the vibration first
+        if self.vibrate:
+            print(f"Vibration argument detected {self.vibrate}\n")
+            self.generate_vibration()
 
         # Prepend gripper g-code with vibration
         self.injected_gcode += f""";-----------------------------------------------
