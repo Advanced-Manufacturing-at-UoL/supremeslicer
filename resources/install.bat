@@ -8,11 +8,11 @@ if /i "%install_reqs%"=="y" (
 )
 
 :: Ask the user if they want to install from the main.spec file
-set /p build_exe="Do you want to build the executable from main.spec? (y/n): "
+set /p build_exe="Do you want to build the executable from the main.spec? (y/n): "
 if /i "%build_exe%"=="y" (
     :: Move back from the resources directory to the supremeslicer directory
     echo Current directory: %cd%
-    pyinstaller main.spec
+    pyinstaller --clean main.spec
 ) else (
     echo Skipping executable build.
 )
@@ -25,6 +25,10 @@ if exist dist\main.exe (
     :: Delete the dist directory after moving the executable
     rmdir /s /q dist
     echo dist directory deleted.
+
+    :: Delete the build directory after the executable has been built and moved
+    rmdir /s /q build
+    echo build direcotry deleted
     
 ) else (
     echo Executable not found, skipping move.
